@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Boarding Pass Diary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EFE2C4;
+    --paper-light: #F8F1DD;
+    --paper-dark: #DEC99C;
+    --desk: #101c24;
+    --desk-2: #16242e;
+    --ink: #1C2B39;
+    --ink-soft: #57687a;
+    --brass: #B08D57;
+    --brass-light:#d8b878;
+    --stamp: #9C3B3B;
+    --line: rgba(28,43,57,0.28);
+    --font-display: 'Fraunces', serif;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'Work Sans', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.05), transparent 55%),
+      radial-gradient(ellipse at 100% 110%, rgba(255,255,255,0.04), transparent 50%),
+      var(--desk);
+    background-color: var(--desk);
+    padding-bottom: 6rem;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.5;
+    background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    z-index:0;
+  }
+
+  /* ---------- Cover ---------- */
+  header.cover{
+    position:relative;
+    padding: 4.5rem 1.5rem 3rem;
+    text-align:center;
+    color: var(--paper-light);
+    z-index:1;
+  }
+  header.cover .eyebrow{
+    display:inline-block;
+    font-family: var(--font-mono);
+    letter-spacing: 0.22em;
+    font-size: 0.68rem;
+    color: var(--brass-light);
+    text-transform: uppercase;
+    margin-bottom: 1.1rem;
+  }
+  header.cover h1{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2.3rem, 5vw, 3.6rem);
+    margin: 0 0 0.6rem;
+    letter-spacing: -0.01em;
+  }
+  header.cover .tagline{
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.05rem;
+    color: rgba(248,241,221,0.65);
+    margin:0;
+  }
+  .airmail-border{
+    height: 9px;
+    max-width: 760px;
+    margin: 2.4rem auto 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      #B23A3A 0px, #B23A3A 11px,
+      var(--paper-light) 11px, var(--paper-light) 15px,
+      #2E5077 15px, #2E5077 26px,
+      var(--paper-light) 26px, var(--paper-light) 30px
+    );
+    border-radius: 2px;
+    opacity:0.9;
+  }
+
+  /* ---------- Book layout ---------- */
+  .book{
+    position:relative;
+    z-index:1;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.4rem;
+    display:grid;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1360px){
+    .book{ grid-template-columns: 1fr 56px 1fr; align-items:start; }
+  }
+  .spine{ display:none; }
+  @media (min-width: 1360px){
+    .spine{ display:flex; flex-direction:column; align-items:center; gap:2.1rem; padding-top:3.2rem; }
+    .spine::before, .spine::after{ content:""; flex:1; width:3px; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), transparent); }
+    .spine .ring{ width:15px; height:15px; border-radius:50%; background: radial-gradient(circle at 32% 30%, var(--brass-light), var(--brass) 60%, #7c5f34 100%); box-shadow: 0 2px 3px rgba(0,0,0,0.4); flex-shrink:0; }
+  }
+
+  .page{
+    background: var(--paper);
+    background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);
+    background-size: 3px 3px;
+    border-radius: 6px;
+    padding: 2.1rem 1.8rem 2.4rem;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.4) inset;
+    position:relative;
+    margin-bottom: 1.6rem;
+    min-width:0;
+  }
+  @media (min-width: 1360px){
+    .page{ margin-bottom:0; }
+    .form-page{ border-radius: 6px 2px 2px 6px; }
+    .collection-page{ border-radius: 2px 6px 6px 2px; }
+  }
+  .page h2{ font-family: var(--font-display); font-weight:600; font-size:1.5rem; margin:0 0 0.3rem; }
+  .page .page-sub{ font-size:0.88rem; color: var(--ink-soft); margin:0 0 1.6rem; max-width:42ch; }
+
+  /* ---------- Form ---------- */
+  form#passForm{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.05rem 0.9rem; }
+  .field{ display:flex; flex-direction:column; gap:0.35rem; position:relative; }
+  .field.full{ grid-column: 1 / -1; }
+  .field label{ font-family: var(--font-mono); font-size:0.66rem; letter-spacing:0.09em; text-transform:uppercase; color: var(--ink-soft); }
+  .field .hint{ font-size:0.68rem; color: var(--ink-soft); font-style:italic; }
+  .field input, .field select, .field textarea{
+    font-family: var(--font-body); font-size:0.94rem; padding:0.6rem 0.7rem;
+    border:none; border-bottom:1.5px solid var(--line); background: rgba(255,255,255,0.35);
+    color: var(--ink); border-radius:3px 3px 0 0; outline:none;
+    transition: background 0.2s, border-color 0.2s;
+    width:100%;
+  }
+  .field textarea{ resize:vertical; min-height:3em; font-family: var(--font-display); font-style:italic; }
+  .field input:focus, .field select:focus, .field textarea:focus{ background: rgba(255,255,255,0.65); border-color:#2E5077; }
+
+  .autocomplete-list{
+    position:absolute;
+    top: 100%;
+    left:0; right:0;
+    background: var(--paper-light);
+    border: 1px solid var(--line);
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+    z-index: 20;
+    max-height: 240px;
+    overflow-y: auto;
+    display:none;
+  }
+  .autocomplete-list.open{ display:block; }
+  .autocomplete-list button{
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    text-align:left;
+    padding: 0.5rem 0.7rem;
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-family: var(--font-body);
+    border-bottom: 1px solid rgba(28,43,57,0.08);
+  }
+  .autocomplete-list button:last-child{ border-bottom:none; }
+  .autocomplete-list button:hover, .autocomplete-list button.active{ background: rgba(46,80,119,0.1); }
+  .autocomplete-list .ac-main{ font-family: var(--font-mono); font-weight:700; font-size:0.85rem; }
+  .autocomplete-list .ac-sub{ font-size:0.72rem; color: var(--ink-soft); }
+  .data-status{
+    grid-column: 1/-1;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    letter-spacing:0.02em;
+    margin-top:-0.4rem;
+  }
+
+  .btn{
+    font-family: var(--font-mono); font-size:0.78rem; letter-spacing:0.06em; text-transform:uppercase;
+    padding:0.85rem 1.4rem; border-radius:3px; border:1.5px solid var(--ink); background: var(--ink);
+    color: var(--paper-light); cursor:pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover{ transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+  .btn:active{ transform: translateY(0); }
+  .btn-stamp{ grid-column: 1/-1; margin-top:0.4rem; background: var(--stamp); border-color: var(--stamp); }
+  .btn-ghost{ background:transparent; color: var(--ink); border:1.5px dashed var(--ink); width:100%; margin-top:1.6rem; }
+  .btn-ghost:hover{ background: rgba(28,43,57,0.06); }
+  .btn:disabled{ opacity:0.55; cursor:progress; transform:none; }
+
+  /* ---------- Collection ---------- */
+  .page-head{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.3rem; }
+  #count{ font-family: var(--font-mono); font-size:0.72rem; color: var(--ink-soft); white-space:nowrap; }
+  #emptyState{ margin-top:2.2rem; padding:2rem 1rem; text-align:center; border:1.5px dashed var(--line); border-radius:6px; color: var(--ink-soft); font-family: var(--font-display); font-style:italic; font-size:0.98rem; }
+  .collection{ display:flex; flex-direction:column; gap: 2.4rem; margin-top:1.7rem; }
+
+  /* ---------- Boarding pass ---------- */
+  .pass-card{ display:flex; flex-direction:column; align-items:stretch; min-width:0; }
+  .pass-scroll{
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 18px 18px 8px 4px;
+    margin: -18px -18px -8px -4px;
+  }
+  .capture-frame{
+    display:inline-block;
+    min-width: 100%;
+    padding: 16px 16px 4px 4px;
+  }
+
+  .boarding-pass{
+    --accent: #1C2B39;
+    --accent-soft: #DEC99C;
+    --tilt: 0deg;
+    position:relative;
+    display:flex;
+    width: 100%;
+    min-width: 460px;
+    background: var(--paper-light);
+    border-radius: 10px;
+    box-shadow: 0 14px 30px -12px rgba(0,0,0,0.45);
+    transform: rotate(var(--tilt));
+    overflow:visible;
+  }
+
+  .accent-stripe{
+    position:absolute; top:0; left:0; right:0; height:6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    border-radius: 10px 10px 0 0;
+  }
+
+  .tape{
+    position:absolute; top:-10px; left:34px; width:58px; height:22px;
+    background: rgba(216,184,120,0.55); border:1px solid rgba(176,141,87,0.4);
+    box-shadow: 0 3px 5px rgba(0,0,0,0.15); transform: rotate(-5deg); z-index:3;
+  }
+
+  .stamp-badge{
+    position:absolute; top:-8px; right:-8px; width:60px; height:60px; border-radius:50%;
+    border: 2px dashed var(--accent); color: var(--accent);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family: var(--font-mono); font-size:0.5rem; font-weight:700; letter-spacing:0.04em; line-height:1.15;
+    transform: rotate(-12deg); background: rgba(248,241,221,0.9); z-index:3; padding:4px;
+  }
+
+  .stub-main{
+    flex: 1 1 auto; padding: 1.5rem 1.5rem 1.2rem; display:flex; flex-direction:column; gap:0.95rem;
+    border-radius:10px 0 0 10px; min-width:0;
+  }
+
+  .bp-top{ display:flex; align-items:center; justify-content:space-between; gap:0.6rem; }
+  .airline{ display:flex; align-items:center; gap:0.5rem; min-width:0; }
+  .airline img.logo{ width:22px; height:22px; object-fit:contain; border-radius:3px; flex-shrink:0; }
+  .airline .plane-icon{ font-size:1rem; transform: rotate(45deg); display:inline-block; color: var(--accent); flex-shrink:0; }
+  .airline-name{
+    font-family: var(--font-mono); font-weight:600; font-size:0.72rem; letter-spacing:0.05em;
+    text-transform:uppercase; color: var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .class-tag{
+    font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.08em; text-transform:uppercase;
+    padding:0.25rem 0.55rem; border:1px solid var(--ink); border-radius:20px; white-space:nowrap; flex-shrink:0;
+  }
+
+  .route{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:0.8rem; }
+  .airport{ display:flex; flex-direction:column; min-width:0; }
+  .airport .code{ font-family: var(--font-mono); font-weight:700; font-size: clamp(1.7rem, 4.2vw, 2.4rem); line-height:1; letter-spacing:0.01em; }
+  .airport .code.approx::after{ content:"~"; font-size:1rem; vertical-align:super; color: var(--ink-soft); margin-left:2px; }
+  .airport .aname{ font-size:0.68rem; color: var(--ink-soft); margin-top:0.3rem; max-width:14ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .airport.to{ align-items:flex-end; text-align:right; }
+
+  .path{ position:relative; height:20px; display:flex; align-items:center; justify-content:center; }
+  .path .dashed-line{ width:100%; height:0; border-top:1.6px dashed var(--ink-soft); }
+  .path .plane-mid{ position:absolute; background: var(--paper-light); padding:0 4px; font-size:0.95rem; color: var(--accent); transform: rotate(90deg); }
+
+  .details-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:0.7rem 0.5rem; padding-top:0.3rem; border-top:1px solid var(--line); }
+  .details-grid > div{ display:flex; flex-direction:column; gap:0.15rem; min-width:0; }
+  .details-grid label{ font-family: var(--font-mono); font-size:0.56rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--ink-soft); }
+  .details-grid span{ font-family: var(--font-mono); font-size:0.85rem; overflow-wrap:anywhere; }
+
+  .memory-note{ font-family: var(--font-display); font-style:italic; font-size:0.86rem; color: var(--ink-soft); padding-top:0.5rem; border-top:1px dashed var(--line); }
+
+  .perforation{
+    position:relative; width:0; flex-shrink:0; margin: 8px 0;
+    border-left: 2px dashed var(--paper-dark);
+    background-image: radial-gradient(circle, var(--desk-2) 3px, transparent 3.4px);
+    background-size: 3px 15px; background-repeat: repeat-y; background-position: -1.5px 0;
+  }
+  .perforation::before, .perforation::after{ content:""; position:absolute; left:50%; transform:translateX(-50%); width:20px; height:20px; border-radius:50%; background: var(--desk-2); }
+  .perforation::before{ top:-10px; }
+  .perforation::after{ bottom:-10px; }
+
+  .stub-tear{
+    flex: 0 0 clamp(112px, 16vw, 148px); padding: 1.5rem 0.85rem 1.2rem; display:flex; flex-direction:column; justify-content:space-between; gap:0.7rem;
+    border-radius: 0 10px 10px 0;
+    background: color-mix(in srgb, var(--accent) 8%, var(--paper-light));
+  }
+  .stub-row{ display:flex; align-items:baseline; justify-content:space-between; gap:0.4rem; }
+  .stub-code{ font-family: var(--font-mono); font-weight:700; font-size:1.05rem; }
+  .stub-flight{ font-family: var(--font-mono); font-size:0.72rem; color: var(--ink-soft); }
+  .stub-mini{ display:grid; grid-template-columns: 1fr 1fr; gap:0.3rem 0.5rem; }
+  .stub-mini div{ display:flex; flex-direction:column; }
+  .stub-mini label{ font-family: var(--font-mono); font-size:0.5rem; text-transform:uppercase; color: var(--ink-soft); letter-spacing:0.05em; }
+  .stub-mini span{ font-family: var(--font-mono); font-size:0.74rem; }
+  .barcode{
+    width:100%; height:34px;
+    background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 6px, transparent 6px 7px, var(--ink) 7px 10px, transparent 10px 12px, var(--ink) 12px 13px, transparent 13px 16px);
+  }
+
+  .card-actions{ display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.7rem; flex-wrap:wrap; }
+  .card-actions button{
+    font-family: var(--font-mono); font-size:0.66rem; letter-spacing:0.06em; text-transform:uppercase;
+    padding:0.45rem 0.75rem; border-radius:3px; border:1.5px solid var(--ink); background:transparent;
+    color: var(--ink); cursor:pointer; transition: background 0.15s, color 0.15s;
+  }
+  .card-actions button:hover{ background: var(--ink); color: var(--paper-light); }
+  .card-actions button.danger{ border-color: #9C3B3B; color:#9C3B3B; }
+  .card-actions button.danger:hover{ background: #9C3B3B; color:#fff; }
+  .card-actions button:disabled{ opacity:0.55; cursor:progress; }
+
+  .pass-enter{ opacity:0; transform: translateY(24px) scale(0.98); }
+  .pass-enter-active{ opacity:1; transition: opacity 0.5s ease, transform 0.55s cubic-bezier(.2,.8,.3,1.1); }
+  .pass-exit{ transition: opacity 0.3s ease, transform 0.3s ease; opacity:0; transform: translateY(10px) scale(0.96); }
+
+  @media (max-width: 640px){
+    form#passForm{ grid-template-columns: 1fr; }
+    .boarding-pass{ min-width: 500px; }
+  }
+
+  footer{ max-width:1180px; margin:3rem auto 0; padding:0 1.4rem; text-align:center; color: rgba(248,241,221,0.45); font-family: var(--font-mono); font-size:0.7rem; letter-spacing:0.04em; position:relative; z-index:1; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; } }
+  :focus-visible{ outline: 2px solid var(--brass-light); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <span class="eyebrow">✈ a pocket for every departure</span>
+  <h1>The Boarding Pass Diary</h1>
+  <p class="tagline">Every trip deserves a stub worth keeping.</p>
+  <div class="airmail-border"></div>
+</header>
+
+<main class="book">
+
+  <section class="page form-page">
+    <h2>New Entry</h2>
+    <p class="page-sub">Fill in a trip and stamp it into your diary. Start typing a city or airline to pick the real code.</p>
+    <form id="passForm" novalidate autocomplete="off">
+      <div class="field full">
+        <label for="name">Passenger</label>
+        <input id="name" name="name" type="text" placeholder="A. Traveler" required>
+      </div>
+
+      <div class="field">
+        <label for="from">From (city or airport)</label>
+        <input id="from" name="from" type="text" placeholder="Delhi" required>
+        <div class="autocomplete-list" id="fromList"></div>
+      </div>
+      <div class="field">
+        <label for="to">To (city or airport)</label>
+        <input id="to" name="to" type="text" placeholder="Reykjavik" required>
+        <div class="autocomplete-list" id="toList"></div>
+      </div>
+
+      <div class="field">
+        <label for="airline">Airline</label>
+        <input id="airline" name="airline" type="text" placeholder="Air India" required>
+        <div class="autocomplete-list" id="airlineList"></div>
+      </div>
+      <div class="field">
+        <label for="flightNo">Flight No.</label>
+        <input id="flightNo" name="flightNo" type="text" placeholder="204" required>
+      </div>
+
+      <div class="field">
+        <label for="date">Date</label>
+        <input id="date" name="date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="cls">Class</label>
+        <select id="cls" name="cls">
+          <option value="ECONOMY">Economy</option>
+          <option value="PREMIUM">Premium</option>
+          <option value="BUSINESS">Business</option>
+          <option value="FIRST">First</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="gate">Gate</label>
+        <input id="gate" name="gate" type="text" placeholder="B12">
+      </div>
+      <div class="field">
+        <label for="seat">Seat</label>
+        <input id="seat" name="seat" type="text" placeholder="14A">
+      </div>
+
+      <div class="field full">
+        <label for="boarding">Boarding Time</label>
+        <input id="boarding" name="boarding" type="time">
+      </div>
+
+      <div class="field full">
+        <label for="note">A memory (optional)</label>
+        <textarea id="note" name="note" placeholder="Window seat, first snow from above."></textarea>
+      </div>
+
+      <div class="data-status" id="dataStatus">Loading airport &amp; airline data…</div>
+
+      <button type="submit" class="btn btn-stamp">Stamp it into the diary</button>
+    </form>
+  </section>
+
+  <div class="spine" aria-hidden="true">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+  </div>
+
+  <section class="page collection-page">
+    <div class="page-head">
+      <h2>Collected Passes</h2>
+      <span id="count">0 passes</span>
+    </div>
+    <p class="page-sub">Nothing is saved on a server — download a stub and it's yours to keep, like the paper ones in a shoebox.</p>
+
+    <div id="emptyState">Your diary is empty. Add your first boarding pass on the left.</div>
+    <div id="collection" class="collection"></div>
+
+    <button id="exportAll" class="btn btn-ghost" hidden>Export whole diary as PDF</button>
+  </section>
+
+</main>
+
+<footer>Kept in this browser tab only &mdash; download each stub to hold onto it for good.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+
+  /* ============================================================
+     Airline brand colors — curated fallback (used regardless of
+     whether the network lookups below succeed, since a live
+     brand-color API is not reliably queryable cross-origin).
+     ============================================================ */
+  const AIRLINE_COLORS = {
+    AI:{primary:'#E0272A',secondary:'#F5A623'}, '6E':{primary:'#13294B',secondary:'#F58220'},
+    UK:{primary:'#5C2D91',secondary:'#F2A900'}, SG:{primary:'#EE2E24',secondary:'#FFCB05'},
+    EK:{primary:'#D71920',secondary:'#C09A5B'}, QR:{primary:'#5C0632',secondary:'#8A1538'},
+    EY:{primary:'#5D3954',secondary:'#BD8B13'}, BA:{primary:'#075AAA',secondary:'#EB2226'},
+    AF:{primary:'#002157',secondary:'#EF3340'}, LH:{primary:'#05164D',secondary:'#F9BA00'},
+    SQ:{primary:'#F99F1C',secondary:'#003876'}, CX:{primary:'#00543C',secondary:'#A79A78'},
+    TG:{primary:'#4B0082',secondary:'#8E1537'}, JL:{primary:'#C4122E',secondary:'#4C4C4C'},
+    NH:{primary:'#00468C',secondary:'#1BA3DE'}, DL:{primary:'#A6192E',secondary:'#003366'},
+    AA:{primary:'#0078D2',secondary:'#C8102E'}, UA:{primary:'#002244',secondary:'#0091D0'},
+    WN:{primary:'#304CB2',secondary:'#F9B612'}, AC:{primary:'#D22630',secondary:'#000000'},
+    QF:{primary:'#E40000',secondary:'#1B1B1B'}, NZ:{primary:'#00205B',secondary:'#000000'},
+    TK:{primary:'#C50830',secondary:'#5D2E0C'}, LX:{primary:'#E30613',secondary:'#1D1D1B'},
+    KL:{primary:'#00A1DE',secondary:'#003876'}, IB:{primary:'#D7192D',secondary:'#F8B02C'},
+    AZ:{primary:'#008C45',secondary:'#CD212A'}, FR:{primary:'#073590',secondary:'#F4C300'},
+    U2:{primary:'#FF6600',secondary:'#12295C'}, VS:{primary:'#E10A0A',secondary:'#2E1A47'},
+    B6:{primary:'#0033A0',secondary:'#00A0DF'}, AS:{primary:'#00385E',secondary:'#7AC142'},
+    MH:{primary:'#010101',secondary:'#C8102E'}, GA:{primary:'#003876',secondary:'#00A651'},
+    PR:{primary:'#003DA5',secondary:'#EE2E24'}, VN:{primary:'#00369C',secondary:'#FFCC29'},
+    KE:{primary:'#00256C',secondary:'#8B7355'}, OZ:{primary:'#00349B',secondary:'#B10041'},
+    CA:{primary:'#B90E27',secondary:'#F4A11D'}, MU:{primary:'#B90E27',secondary:'#1D3E7C'},
+    CZ:{primary:'#008542',secondary:'#B90E27'}, ET:{primary:'#578237',secondary:'#F9B517'},
+    SA:{primary:'#003876',secondary:'#F4A11D'}, LA:{primary:'#1B1B1B',secondary:'#E4032E'},
+    AV:{primary:'#E4032E',secondary:'#1B1B1B'}, AM:{primary:'#00693E',secondary:'#C6093B'},
+    AR:{primary:'#74ACDF',secondary:'#1B1B1B'}, IX:{primary:'#C1272D',secondary:'#F7941E'},
+    G8:{primary:'#8DC63F',secondary:'#1B1B1B'}, I5:{primary:'#E4032E',secondary:'#F4A11D'}
+  };
+  const DEFAULT_ACCENT = {primary:'#1C2B39', secondary:'#DEC99C'};
+
+  /* ============================================================
+     Fallback airport / airline datasets (used instantly, then
+     enriched by the live fetches below once/if they resolve).
+     ============================================================ */
+  const FALLBACK_AIRPORTS = [
+    ['DEL','Indira Gandhi International','Delhi','India'],['BOM','Chhatrapati Shivaji Maharaj Intl','Mumbai','India'],
+    ['BLR','Kempegowda International','Bengaluru','India'],['MAA','Chennai International','Chennai','India'],
+    ['HYD','Rajiv Gandhi International','Hyderabad','India'],['CCU','Netaji Subhas Chandra Bose Intl','Kolkata','India'],
+    ['AMD','Sardar Vallabhbhai Patel Intl','Ahmedabad','India'],['IXJ','Jammu Airport','Jammu','India'],
+    ['PNQ','Pune Airport','Pune','India'],['GOI','Goa International (Dabolim)','Goa','India'],
+    ['GOX','Manohar International','Goa','India'],['COK','Cochin International','Kochi','India'],
+    ['JAI','Jaipur International','Jaipur','India'],['IXC','Chandigarh Airport','Chandigarh','India'],
+    ['LKO','Chaudhary Charan Singh Intl','Lucknow','India'],['SXR','Srinagar Airport','Srinagar','India'],
+    ['JFK','John F. Kennedy International','New York','United States'],['EWR','Newark Liberty International','Newark','United States'],
+    ['LAX','Los Angeles International','Los Angeles','United States'],['ORD',"O'Hare International",'Chicago','United States'],
+    ['SFO','San Francisco International','San Francisco','United States'],['LHR','Heathrow','London','United Kingdom'],
+    ['LGW','Gatwick','London','United Kingdom'],['LCY','London City','London','United Kingdom'],
+    ['STN','Stansted','London','United Kingdom'],['CDG','Charles de Gaulle','Paris','France'],
+    ['ORY','Orly','Paris','France'],['AMS','Schiphol','Amsterdam','Netherlands'],
+    ['FRA','Frankfurt Airport','Frankfurt','Germany'],['MUC','Munich Airport','Munich','Germany'],
+    ['DXB','Dubai International','Dubai','United Arab Emirates'],['AUH','Abu Dhabi International','Abu Dhabi','United Arab Emirates'],
+    ['DOH','Hamad International','Doha','Qatar'],['IST','Istanbul Airport','Istanbul','Turkey'],
+    ['SIN','Changi Airport','Singapore','Singapore'],['HKG','Hong Kong International','Hong Kong','Hong Kong'],
+    ['ICN','Incheon International','Seoul','South Korea'],['NRT','Narita International','Tokyo','Japan'],
+    ['HND','Haneda Airport','Tokyo','Japan'],['BKK','Suvarnabhumi Airport','Bangkok','Thailand'],
+    ['KUL','Kuala Lumpur International','Kuala Lumpur','Malaysia'],['CGK','Soekarno-Hatta International','Jakarta','Indonesia'],
+    ['SYD','Kingsford Smith','Sydney','Australia'],['MEL','Melbourne Airport','Melbourne','Australia'],
+    ['AKL','Auckland Airport','Auckland','New Zealand'],['YYZ','Toronto Pearson','Toronto','Canada'],
+    ['YVR','Vancouver International','Vancouver','Canada'],['GRU','Guarulhos International','Sao Paulo','Brazil'],
+    ['EZE','Ministro Pistarini','Buenos Aires','Argentina'],['JNB','O.R. Tambo International','Johannesburg','South Africa'],
+    ['CAI','Cairo International','Cairo','Egypt'],['ADD','Bole International','Addis Ababa','Ethiopia'],
+    ['KEF','Keflavik International','Reykjavik','Iceland'],['CPH','Copenhagen Airport','Copenhagen','Denmark'],
+    ['ARN','Stockholm Arlanda','Stockholm','Sweden'],['OSL','Oslo Airport','Oslo','Norway'],
+    ['ZRH','Zurich Airport','Zurich','Switzerland'],['VIE','Vienna International','Vienna','Austria'],
+    ['FCO','Leonardo da Vinci','Rome','Italy'],['MXP','Malpensa','Milan','Italy'],
+    ['MAD','Adolfo Suarez Barajas','Madrid','Spain'],['BCN','Barcelona-El Prat','Barcelona','Spain'],
+    ['LIS','Humberto Delgado','Lisbon','Portugal'],['ATH','Athens International','Athens','Greece'],
+    ['MEX','Mexico City International','Mexico City','Mexico'],['YYC','Calgary International','Calgary','Canada']
+  ].map(a => ({iata:a[0], name:a[1], city:a[2], country:a[3]}));
+
+  const FALLBACK_AIRLINES = Object.keys(AIRLINE_COLORS).reduce((arr, code) => arr, []).concat([]);
+  const AIRLINE_NAMES = {
+    AI:'Air India', '6E':'IndiGo', UK:'Vistara', SG:'SpiceJet', EK:'Emirates', QR:'Qatar Airways',
+    EY:'Etihad Airways', BA:'British Airways', AF:'Air France', LH:'Lufthansa', SQ:'Singapore Airlines',
+    CX:'Cathay Pacific', TG:'Thai Airways', JL:'Japan Airlines', NH:'All Nippon Airways', DL:'Delta Air Lines',
+    AA:'American Airlines', UA:'United Airlines', WN:'Southwest Airlines', AC:'Air Canada', QF:'Qantas',
+    NZ:'Air New Zealand', TK:'Turkish Airlines', LX:'Swiss International Air Lines', KL:'KLM',
+    IB:'Iberia', AZ:'ITA Airways', FR:'Ryanair', U2:'easyJet', VS:'Virgin Atlantic', B6:'JetBlue',
+    AS:'Alaska Airlines', MH:'Malaysia Airlines', GA:'Garuda Indonesia', PR:'Philippine Airlines',
+    VN:'Vietnam Airlines', KE:'Korean Air', OZ:'Asiana Airlines', CA:'Air China', MU:'China Eastern',
+    CZ:'China Southern', ET:'Ethiopian Airlines', SA:'South African Airways', LA:'LATAM Airlines',
+    AV:'Avianca', AM:'Aeromexico', AR:'Aerolineas Argentinas', IX:'Air India Express', G8:'Go First', I5:'AirAsia India'
+  };
+  const FALLBACK_AIRLINE_LIST = Object.keys(AIRLINE_NAMES).map(code => ({iata: code, name: AIRLINE_NAMES[code]}));
+
+  let AIRPORTS = FALLBACK_AIRPORTS.slice();
+  let AIRLINES = FALLBACK_AIRLINE_LIST.slice();
+  const dataStatus = document.getElementById('dataStatus');
+
+  function mergeByIata(base, extra){
+    const seen = new Set(base.map(x => x.iata));
+    extra.forEach(x => { if(x.iata && !seen.has(x.iata)){ base.push(x); seen.add(x.iata); } });
+    return base;
+  }
+
+  /* Live enrichment #1: OurAirports-style dataset (mwgg/Airports on GitHub)
+     — ~29,000 airports with IATA/ICAO codes, names and cities. */
+  fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(json => {
+      const extra = Object.values(json)
+        .filter(a => a.iata && a.iata.length === 3)
+        .map(a => ({ iata: a.iata, name: a.name, city: a.city || a.name, country: a.country }));
+      AIRPORTS = mergeByIata(AIRPORTS, extra);
+      updateStatus();
+    })
+    .catch(() => { updateStatus(); });
+
+  /* Live enrichment #2: OpenFlights airline dataset — name/alias to
+     IATA code mapping, used for the airline autocomplete. */
+  fetch('https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat')
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(text => {
+      const rows = parseCsv(text);
+      const extra = rows
+        .filter(r => r[3] && r[3] !== '\\N' && r[3].trim().length === 2 && r[7] === 'Y')
+        .map(r => ({ iata: r[3].trim(), name: r[1].trim() }));
+      AIRLINES = mergeByIata(AIRLINES, extra);
+      updateStatus();
+    })
+    .catch(() => { updateStatus(); });
+
+  let loadTicks = 0;
+  function updateStatus(){
+    loadTicks++;
+    dataStatus.textContent = 'Live airport & airline lookup ready — ' + AIRPORTS.length + ' airports, ' + AIRLINES.length + ' airlines indexed.';
+    if(loadTicks >= 2 || AIRPORTS.length > 100){
+      setTimeout(() => { dataStatus.style.display = 'none'; }, 2500);
+    }
+  }
+  setTimeout(() => {
+    if(dataStatus) dataStatus.textContent = 'Using built-in airport & airline list (' + AIRPORTS.length + ' airports). Live lookups may still arrive.';
+  }, 2500);
+
+  function parseCsv(text){
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for(let i=0;i<text.length;i++){
+      const c = text[i];
+      if(inQuotes){
+        if(c === '"'){
+          if(text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; }
+        } else field += c;
+      } else {
+        if(c === '"') inQuotes = true;
+        else if(c === ','){ row.push(field); field=''; }
+        else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+        else if(c === '\r'){ /* skip */ }
+        else field += c;
+      }
+    }
+    if(field.length || row.length){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  /* ============================================================
+     Autocomplete
+     ============================================================ */
+  function searchAirports(q){
+    q = q.trim().toLowerCase();
+    if(!q) return [];
+    const starts = [], includes = [];
+    for(const a of AIRPORTS){
+      const hay = (a.city + ' ' + a.name + ' ' + a.iata).toLowerCase();
+      if(a.iata.toLowerCase() === q || a.city.toLowerCase().startsWith(q)) starts.push(a);
+      else if(hay.includes(q)) includes.push(a);
+    }
+    return starts.concat(includes).slice(0, 8);
+  }
+  function searchAirlines(q){
+    q = q.trim().toLowerCase();
+    if(!q) return [];
+    const starts = [], includes = [];
+    for(const a of AIRLINES){
+      const hay = (a.name + ' ' + a.iata).toLowerCase();
+      if(a.name.toLowerCase().startsWith(q) || a.iata.toLowerCase() === q) starts.push(a);
+      else if(hay.includes(q)) includes.push(a);
+    }
+    return starts.concat(includes).slice(0, 8);
+  }
+  function exactCityMatches(q){
+    q = q.trim().toLowerCase();
+    return AIRPORTS.filter(a => a.city.toLowerCase() === q);
+  }
+  function exactAirlineMatches(q){
+    q = q.trim().toLowerCase();
+    return AIRLINES.filter(a => a.name.toLowerCase() === q);
+  }
+
+  function wireAutocomplete(inputId, listId, searchFn, renderItem, onSelect){
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let activeIndex = -1;
+    let currentResults = [];
+
+    function close(){ list.classList.remove('open'); list.innerHTML=''; activeIndex=-1; }
+    function open(results){
+      currentResults = results;
+      list.innerHTML = results.map((r,i) => renderItem(r,i)).join('');
+      list.classList.toggle('open', results.length > 0);
+      activeIndex = -1;
+      Array.from(list.children).forEach((btn, i) => {
+        btn.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
+      });
+    }
+    function pick(i){
+      const r = currentResults[i];
+      if(!r) return;
+      onSelect(input, r);
+      close();
+    }
+    input.addEventListener('input', () => {
+      delete input.dataset.code; delete input.dataset.name; delete input.dataset.city; delete input.dataset.country;
+      open(searchFn(input.value));
+    });
+    input.addEventListener('keydown', (e) => {
+      const items = Array.from(list.children);
+      if(e.key === 'ArrowDown'){ e.preventDefault(); activeIndex = Math.min(activeIndex+1, items.length-1); highlight(items); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); activeIndex = Math.max(activeIndex-1, 0); highlight(items); }
+      else if(e.key === 'Enter'){ if(activeIndex >= 0){ e.preventDefault(); pick(activeIndex); } }
+      else if(e.key === 'Escape'){ close(); }
+    });
+    function highlight(items){
+      items.forEach((it,i) => it.classList.toggle('active', i===activeIndex));
+      if(items[activeIndex]) items[activeIndex].scrollIntoView({block:'nearest'});
+    }
+    input.addEventListener('blur', () => setTimeout(close, 120));
+    return input;
+  }
+
+  wireAutocomplete('from', 'fromList', searchAirports,
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.iata)} &mdash; ${escapeHtml(a.city)}</span><span class="ac-sub">${escapeHtml(a.name)}, ${escapeHtml(a.country)}</span></button>`,
+    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; }
+  );
+  wireAutocomplete('to', 'toList', searchAirports,
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.iata)} &mdash; ${escapeHtml(a.city)}</span><span class="ac-sub">${escapeHtml(a.name)}, ${escapeHtml(a.country)}</span></button>`,
+    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; }
+  );
+  wireAutocomplete('airline', 'airlineList', searchAirlines,
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.name)}</span><span class="ac-sub">${escapeHtml(a.iata)}</span></button>`,
+    (input, a) => { input.value = a.name; input.dataset.code = a.iata; }
+  );
+
+  function resolveAirport(input){
+    if(input.dataset.code) return { iata: input.dataset.code, name: input.dataset.name, city: input.dataset.city, approx:false };
+    const matches = exactCityMatches(input.value);
+    if(matches.length === 1) return { iata: matches[0].iata, name: matches[0].name, city: matches[0].city, approx:false };
+    const clean = (input.value||'').trim().replace(/[^a-zA-Z]/g,'');
+    return { iata: (clean.slice(0,3)||'???').toUpperCase(), name:null, city: input.value.trim(), approx:true };
+  }
+  function resolveAirline(input){
+    if(input.dataset.code) return { iata: input.dataset.code, name: input.value.trim(), approx:false };
+    const matches = exactAirlineMatches(input.value);
+    if(matches.length === 1) return { iata: matches[0].iata, name: matches[0].name, approx:false };
+    return { iata: null, name: input.value.trim(), approx:true };
+  }
+
+  function escapeHtml(str){
+    return (str||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso + 'T00:00:00');
+    if(isNaN(d)) return iso;
+    return d.toLocaleDateString(undefined, { day:'2-digit', month:'short', year:'numeric' });
+  }
+  function fmtTime(t){
+    if(!t) return '—';
+    const [h,m] = t.split(':');
+    const hour = parseInt(h,10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12 = ((hour + 11) % 12) + 1;
+    return h12 + ':' + m + ' ' + ampm;
+  }
+
+  /* ============================================================
+     Card rendering
+     ============================================================ */
+  const entries = [];
+  const collectionEl = document.getElementById('collection');
+  const emptyState = document.getElementById('emptyState');
+  const countEl = document.getElementById('count');
+  const exportAllBtn = document.getElementById('exportAll');
+  const form = document.getElementById('passForm');
+
+  function updateMeta(){
+    countEl.textContent = entries.length + (entries.length === 1 ? ' pass' : ' passes');
+    emptyState.style.display = entries.length ? 'none' : 'block';
+    exportAllBtn.hidden = entries.length === 0;
+  }
+
+  function logoUrl(iata){
+    return 'https://images.kiwi.com/airlines/64/' + encodeURIComponent(iata) + '.png';
+  }
+
+  function buildCardHTML(data){
+    const tilt = (Math.random() * 1.6 - 0.8).toFixed(2) + 'deg';
+    const accent = (data.airlineCode && AIRLINE_COLORS[data.airlineCode]) || DEFAULT_ACCENT;
+    const codeFromClass = data.fromApprox ? 'code approx' : 'code';
+    const codeToClass = data.toApprox ? 'code approx' : 'code';
+    const logo = data.airlineCode ? `<img class="logo" src="${logoUrl(data.airlineCode)}" alt="" onerror="this.remove()">` : '';
+
+    return `
+      <div class="boarding-pass" style="--tilt:${tilt}; --accent:${accent.primary}; --accent-soft:${accent.secondary}">
+        <div class="accent-stripe"></div>
+        <div class="tape"></div>
+        <div class="stamp-badge">BOARDED<br>${fmtDate(data.date)}</div>
+        <div class="stub-main">
+          <div class="bp-top">
+            <div class="airline">
+              ${logo}
+              <span class="plane-icon">&#9992;</span>
+              <span class="airline-name">${escapeHtml(data.airline)}${data.airlineCode ? ' &middot; ' + escapeHtml(data.airlineCode) : ''}</span>
+            </div>
+            <div class="class-tag">${escapeHtml(data.cls)}</div>
+          </div>
+          <div class="route">
+            <div class="airport from">
+              <span class="${codeFromClass}">${escapeHtml(data.fromCode)}</span>
+              <span class="aname">${escapeHtml(data.fromCity)}</span>
+            </div>
+            <div class="path">
+              <div class="dashed-line"></div>
+              <span class="plane-mid">&#9992;</span>
+            </div>
+            <div class="airport to">
+              <span class="${codeToClass}">${escapeHtml(data.toCode)}</span>
+              <span class="aname">${escapeHtml(data.toCity)}</span>
+            </div>
+          </div>
+          <div class="details-grid">
+            <div><label>Passenger</label><span>${escapeHtml(data.name)}</span></div>
+            <div><label>Flight</label><span>${escapeHtml((data.airlineCode||'')+' '+data.flightNo)}</span></div>
+            <div><label>Date</label><span>${fmtDate(data.date)}</span></div>
+            <div><label>Gate</label><span>${escapeHtml(data.gate) || '—'}</span></div>
+            <div><label>Seat</label><span>${escapeHtml(data.seat) || '—'}</span></div>
+            <div><label>Boarding</label><span>${fmtTime(data.boarding)}</span></div>
+          </div>
+          ${data.note ? `<div class="memory-note">&ldquo;${escapeHtml(data.note)}&rdquo;</div>` : ''}
+        </div>
+        <div class="perforation"></div>
+        <div class="stub-tear">
+          <div class="stub-row">
+            <span class="stub-code">${escapeHtml(data.fromCode)}&rarr;${escapeHtml(data.toCode)}</span>
+          </div>
+          <div class="stub-mini">
+            <div><label>Flight</label><span>${escapeHtml((data.airlineCode||'')+data.flightNo)}</span></div>
+            <div><label>Seat</label><span>${escapeHtml(data.seat)||'—'}</span></div>
+            <div><label>Gate</label><span>${escapeHtml(data.gate)||'—'}</span></div>
+            <div><label>Class</label><span>${escapeHtml(data.cls.slice(0,4))}</span></div>
+          </div>
+          <div class="barcode"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const ACTIONS_HTML = `
+    <div class="card-actions">
+      <button type="button" data-action="png">Save PNG</button>
+      <button type="button" data-action="pdf">Save PDF</button>
+      <button type="button" data-action="delete" class="danger">Remove</button>
+    </div>
+  `;
+
+  function addEntry(data){
+    const id = 'p' + Date.now() + Math.random().toString(36).slice(2,7);
+    entries.unshift({ id, ...data });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pass-card pass-enter';
+    wrapper.dataset.id = id;
+    wrapper.innerHTML = `<div class="pass-scroll"><div class="capture-frame">${buildCardHTML(data)}</div></div>${ACTIONS_HTML}`;
+    collectionEl.prepend(wrapper);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      wrapper.classList.add('pass-enter-active');
+      wrapper.classList.remove('pass-enter');
+    }));
+
+    wrapper.addEventListener('click', onCardAction);
+    updateMeta();
+    wrapper.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  function removeEntry(wrapper){
+    const id = wrapper.dataset.id;
+    wrapper.classList.add('pass-exit');
+    wrapper.addEventListener('transitionend', () => {
+      wrapper.remove();
+      const idx = entries.findIndex(e => e.id === id);
+      if(idx > -1) entries.splice(idx, 1);
+      updateMeta();
+    }, { once:true });
+  }
+
+  async function downloadPNG(frameEl, filenameBase){
+    const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
+    const link = document.createElement('a');
+    link.download = filenameBase + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+  async function downloadPDF(frameEl, filenameBase){
+    const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
+    const { jsPDF } = window.jspdf;
+    const wMM = 200;
+    const hMM = (canvas.height / canvas.width) * wMM;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
+    pdf.save(filenameBase + '.pdf');
+  }
+
+  function onCardAction(e){
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const wrapper = e.currentTarget;
+    const frame = wrapper.querySelector('.capture-frame');
+    const id = wrapper.dataset.id;
+    const entry = entries.find(en => en.id === id);
+    const base = 'boarding-pass_' + (entry ? entry.fromCode + '-' + entry.toCode : id);
+
+    if(btn.dataset.action === 'delete'){ removeEntry(wrapper); return; }
+
+    const originalLabel = btn.textContent;
+    btn.disabled = true; btn.textContent = '...';
+    const action = btn.dataset.action === 'png' ? downloadPNG(frame, base) : downloadPDF(frame, base);
+    action.finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(form);
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const airlineInput = document.getElementById('airline');
+
+    const fromR = resolveAirport(fromInput);
+    const toR = resolveAirport(toInput);
+    const airlineR = resolveAirline(airlineInput);
+
+    const data = {
+      name: fd.get('name').trim(),
+      airline: airlineR.name,
+      airlineCode: airlineR.iata,
+      flightNo: fd.get('flightNo').trim(),
+      fromCode: fromR.iata, fromCity: fromR.city, fromApprox: fromR.approx,
+      toCode: toR.iata, toCity: toR.city, toApprox: toR.approx,
+      date: fd.get('date'),
+      cls: fd.get('cls'),
+      gate: fd.get('gate').trim(),
+      seat: fd.get('seat').trim(),
+      boarding: fd.get('boarding'),
+      note: fd.get('note').trim()
+    };
+    if(!data.name || !data.fromCity || !data.toCity || !data.airline || !data.flightNo || !data.date){
+      form.reportValidity();
+      return;
+    }
+    addEntry(data);
+    form.reset();
+    document.getElementById('name').focus();
+  });
+
+  exportAllBtn.addEventListener('click', async function(){
+    const frames = Array.from(document.querySelectorAll('.capture-frame'));
+    if(!frames.length) return;
+    exportAllBtn.disabled = true;
+    exportAllBtn.textContent = 'Preparing PDF…';
+    try{
+      const { jsPDF } = window.jspdf;
+      let pdf = null;
+      for(let i=0;i<frames.length;i++){
+        const canvas = await html2canvas(frames[i], { backgroundColor:'#F8F1DD', scale:2.5, useCORS:true });
+        const wMM = 200;
+        const hMM = (canvas.height / canvas.width) * wMM;
+        if(!pdf) pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM,hMM] });
+        else pdf.addPage([wMM,hMM], 'landscape');
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
+      }
+      pdf.save('the-boarding-pass-diary.pdf');
+    } finally {
+      exportAllBtn.disabled = false;
+      exportAllBtn.textContent = 'Export whole diary as PDF';
+    }
+  });
+
+  updateMeta();
+})();
+</script>
+</body>
+</html>
