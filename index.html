@@ -855,21 +855,36 @@
   }
 
   async function downloadPNG(frameEl, filenameBase){
-    const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
+  const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
+  
+  // Create blob instead of data URL
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
+    link.href = url;
     link.download = filenameBase + '.png';
-    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);  // Append to DOM
     link.click();
-  }
-  async function downloadPDF(frameEl, filenameBase){
-    const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
-    const { jsPDF } = window.jspdf;
-    const wMM = 200;
-    const hMM = (canvas.height / canvas.width) * wMM;
-    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);  // Clean up
+  }, 'image/png');
+}
+
+async function downloadPDF(frameEl, filenameBase){
+  const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
+  const { jsPDF } = window.jspdf;
+  const wMM = 200;
+  const hMM = (canvas.height / canvas.width) * wMM;
+  const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
+  
+  // Convert canvas to blob before adding to PDF
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    pdf.addImage(url, 'PNG', 0, 0, wMM, hMM);
     pdf.save(filenameBase + '.pdf');
-  }
+    URL.revokeObjectURL(url);
+  });
+}
 
   function onCardAction(e){
     const btn = e.target.closest('button[data-action]');
