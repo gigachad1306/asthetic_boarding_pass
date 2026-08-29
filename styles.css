@@ -1,347 +1,641 @@
+/* =====================================================
+   THE BOARDING PASS DIARY
+   Visual redesign — "an expensive little travel journal
+   found in the pocket of a vintage Rimowa suitcase."
+   Structure, class names, IDs and JS behavior unchanged.
+===================================================== */
+
 :root{
-    --paper: #EFE2C4;
-    --paper-light: #F8F1DD;
-    --paper-dark: #DEC99C;
-    --desk: #101c24;
-    --desk-2: #16242e;
-    --ink: #1C2B39;
-    --ink-soft: #57687a;
-    --brass: #B08D57;
-    --brass-light:#d8b878;
-    --stamp: #9C3B3B;
-    --line: rgba(28,43,57,0.28);
-    --font-display: 'Fraunces', serif;
-    --font-mono: 'Space Mono', monospace;
-    --font-body: 'Work Sans', sans-serif;
-  }
+  /* premium archival palette */
+  --paper:        #F5EBD3;  /* aged paper */
+  --paper-light:  #FBF6E8;  /* lighter paper */
+  --paper-dark:   #E7D8B4;
+  --paper-deep:   #EADCBB;
+  --desk:         #10171C;  /* dark desk */
+  --desk-2:       #141d24;
+  --ink:          #17232C;  /* charcoal/navy ink */
+  --ink-soft:     #536B7A;  /* dusty blue */
+  --taupe:        #B8AA91;  /* soft taupe */
+  --brass:        #B08A52;  /* antique brass */
+  --brass-light:  #cBA875;
+  --stamp:        #8E3438;  /* muted burgundy */
+  --stamp-2:      #7a2b2f;
+  --line:         rgba(23,35,44,0.22);
+  --line-soft:    rgba(23,35,44,0.12);
 
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono:    'Space Mono', ui-monospace, monospace;
+  --font-body:    'Work Sans', system-ui, sans-serif;
+}
 
-  body{
-    margin:0;
-    min-height:100vh;
-    font-family: var(--font-body);
-    color: var(--ink);
-    background:
-      radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.05), transparent 55%),
-      radial-gradient(ellipse at 100% 110%, rgba(255,255,255,0.04), transparent 50%),
-      var(--desk);
-    background-color: var(--desk);
-    padding-bottom: 6rem;
-  }
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
 
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    opacity:0.5;
-    background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
-    z-index:0;
-  }
+body{
+  margin:0;
+  min-height:100vh;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(120% 80% at 50% 8%, rgba(176,138,82,0.10), transparent 42%),
+    radial-gradient(90% 60% at 50% 50%, rgba(255,255,255,0.028), transparent 60%),
+    var(--desk);
+  background-color: var(--desk);
+  padding-bottom: 6rem;
+  position:relative;
+}
 
-  /* ---------- Cover ---------- */
-  header.cover{
+/* very fine film grain over the whole desk */
+body::before{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  opacity:0.05;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.9) 0.5px, transparent 0.6px),
+    radial-gradient(rgba(0,0,0,0.8) 0.5px, transparent 0.6px);
+  background-size: 3px 3px, 4px 4px;
+  background-position: 0 0, 1px 2px;
+  mix-blend-mode: overlay;
+}
+/* soft vignette around the page */
+body::after{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, rgba(0,0,0,0.42) 100%);
+}
+
+/* ---------- Cover ---------- */
+header.cover{
+  position:relative; z-index:1;
+  padding: 6rem 1.5rem 3.4rem;
+  text-align:center;
+  color: var(--paper-light);
+}
+header.cover .eyebrow{
+  display:inline-block;
+  font-family: var(--font-mono);
+  letter-spacing: 0.32em;
+  font-size: 0.62rem;
+  color: var(--brass-light);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity:0.9;
+}
+header.cover h1{
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.7rem, 6vw, 4.6rem);
+  line-height: 1.02;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+  color: #F3E9D2;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+header.cover .tagline{
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.98rem;
+  color: rgba(248,241,221,0.55);
+  margin:0 auto;
+  max-width: 34ch;
+  line-height:1.6;
+}
+/* tiny archival metadata line (added in markup) */
+header.cover .archive-meta{
+  display:block;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(176,138,82,0.75);
+  margin-top: 1.7rem;
+}
+/* decorative aviation mark (added in markup) */
+header.cover .cover-mark{
+  display:flex; align-items:center; justify-content:center; gap:0.8rem;
+  margin: 1.4rem auto 0; max-width:220px;
+  color: var(--brass);
+}
+header.cover .cover-mark::before,
+header.cover .cover-mark::after{
+  content:""; height:1px; flex:1;
+  background: linear-gradient(to var(--dir, right), transparent, rgba(176,138,82,0.6));
+}
+header.cover .cover-mark::after{ --dir:left; }
+header.cover .cover-mark span{ font-size:0.9rem; transform: rotate(45deg); line-height:1; }
+
+/* thin, elegant archival border */
+.airmail-border{
+  height: 2px;
+  max-width: 300px;
+  margin: 1.6rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--brass) 20%, var(--brass) 80%, transparent);
+  opacity:0.5;
+  border-radius: 2px;
+}
+
+/* ---------- Book layout ---------- */
+.book{
+  position:relative; z-index:1;
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 0 1.4rem;
+  display:grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1180px){
+  .book{ grid-template-columns: 1fr 60px 1fr; align-items:start; }
+}
+.spine{ display:none; }
+@media (min-width: 1180px){
+  .spine{
     position:relative;
-    padding: 4.5rem 1.5rem 3rem;
-    text-align:center;
-    color: var(--paper-light);
-    z-index:1;
+    align-self:stretch;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2.3rem; padding: 3.4rem 0;
+    background: linear-gradient(90deg,
+      rgba(0,0,0,0.22), rgba(0,0,0,0.05) 24%,
+      rgba(255,255,255,0.05) 50%,
+      rgba(0,0,0,0.05) 76%, rgba(0,0,0,0.22));
+    border-radius: 3px;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.35);
   }
-  header.cover .eyebrow{
-    display:inline-block;
-    font-family: var(--font-mono);
-    letter-spacing: 0.22em;
-    font-size: 0.68rem;
-    color: var(--brass-light);
-    text-transform: uppercase;
-    margin-bottom: 1.1rem;
+  .spine::before, .spine::after{
+    content:""; position:absolute; top:2rem; bottom:2rem; width:1px;
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.4), transparent);
   }
-  header.cover h1{
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: clamp(2.3rem, 5vw, 3.6rem);
-    margin: 0 0 0.6rem;
-    letter-spacing: -0.01em;
+  .spine::before{ left: 12px; }
+  .spine::after{ right: 12px; }
+  .spine .ring{
+    width:13px; height:13px; border-radius:50%;
+    background: radial-gradient(circle at 34% 30%, var(--brass-light), var(--brass) 55%, #6f552e 100%);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.5);
+    flex-shrink:0;
   }
-  header.cover .tagline{
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 400;
-    font-size: 1.05rem;
-    color: rgba(248,241,221,0.65);
-    margin:0;
-  }
-  .airmail-border{
-    height: 9px;
-    max-width: 760px;
-    margin: 2.4rem auto 0;
-    background: repeating-linear-gradient(
-      -45deg,
-      #B23A3A 0px, #B23A3A 11px,
-      var(--paper-light) 11px, var(--paper-light) 15px,
-      #2E5077 15px, #2E5077 26px,
-      var(--paper-light) 26px, var(--paper-light) 30px
-    );
-    border-radius: 2px;
-    opacity:0.9;
-  }
+}
 
-  /* ---------- Book layout ---------- */
-  .book{
-    position:relative;
-    z-index:1;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 1.4rem;
-    display:grid;
-    grid-template-columns: 1fr;
+.page{
+  position:relative;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), transparent 30%),
+    linear-gradient(200deg, var(--paper-light), var(--paper) 45%, var(--paper-deep));
+  border-radius: 4px;
+  padding: 2.6rem 2.1rem 2.8rem;
+  box-shadow:
+    0 40px 70px -28px rgba(0,0,0,0.62),
+    0 2px 0 rgba(255,255,255,0.5) inset,
+    0 0 0 1px rgba(23,35,44,0.05) inset;
+  margin-bottom: 1.6rem;
+  min-width:0;
+}
+/* fine paper fibers/grain — kept off the captured pass */
+.page::before{
+  content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  opacity:0.5;
+  background-image:
+    repeating-linear-gradient(96deg, rgba(23,35,44,0.020) 0 1px, transparent 1px 4px),
+    radial-gradient(rgba(23,35,44,0.028) 0.5px, transparent 0.6px);
+  background-size: auto, 3px 3px;
+}
+/* soft inner edge highlight + shadow toward the spine */
+.page::after{
+  content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  box-shadow: inset 0 0 22px rgba(255,255,255,0.28);
+}
+@media (min-width: 1180px){
+  .page{ margin-bottom:0; }
+  /* pages feel physically placed — a hair of rotation + spine shadow */
+  .form-page{
+    border-radius: 5px 2px 2px 5px;
+    transform: rotate(-0.25deg);
+    box-shadow:
+      36px 40px 70px -30px rgba(0,0,0,0.6),
+      0 2px 0 rgba(255,255,255,0.5) inset,
+      -14px 0 22px -18px rgba(0,0,0,0.5) inset;
   }
-  @media (min-width: 1360px){
-    .book{ grid-template-columns: 1fr 56px 1fr; align-items:start; }
+  .collection-page{
+    border-radius: 2px 5px 5px 2px;
+    transform: rotate(0.25deg);
+    box-shadow:
+      -36px 40px 70px -30px rgba(0,0,0,0.6),
+      0 2px 0 rgba(255,255,255,0.5) inset,
+      14px 0 22px -18px rgba(0,0,0,0.5) inset;
   }
-  .spine{ display:none; }
-  @media (min-width: 1360px){
-    .spine{ display:flex; flex-direction:column; align-items:center; gap:2.1rem; padding-top:3.2rem; }
-    .spine::before, .spine::after{ content:""; flex:1; width:3px; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), transparent); }
-    .spine .ring{ width:15px; height:15px; border-radius:50%; background: radial-gradient(circle at 32% 30%, var(--brass-light), var(--brass) 60%, #7c5f34 100%); box-shadow: 0 2px 3px rgba(0,0,0,0.4); flex-shrink:0; }
-  }
+}
 
-  .page{
-    background: var(--paper);
-    background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);
-    background-size: 3px 3px;
-    border-radius: 6px;
-    padding: 2.1rem 1.8rem 2.4rem;
-    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.4) inset;
-    position:relative;
-    margin-bottom: 1.6rem;
-    min-width:0;
-  }
-  @media (min-width: 1360px){
-    .page{ margin-bottom:0; }
-    .form-page{ border-radius: 6px 2px 2px 6px; }
-    .collection-page{ border-radius: 2px 6px 6px 2px; }
-  }
-  .page h2{ font-family: var(--font-display); font-weight:600; font-size:1.5rem; margin:0 0 0.3rem; }
-  .page .page-sub{ font-size:0.88rem; color: var(--ink-soft); margin:0 0 1.6rem; max-width:42ch; }
+/* editorial section headings with mono section number (added in markup) */
+.page .section-index{
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 0.5rem;
+  position:relative; z-index:1;
+}
+.page h2{
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.7rem, 2.6vw, 2.15rem);
+  line-height:1.05;
+  letter-spacing:-0.01em;
+  margin:0 0 0.5rem;
+  color: var(--ink);
+  position:relative; z-index:1;
+}
+.page .page-sub{
+  font-size:0.86rem; color: var(--ink-soft); margin:0 0 2rem; max-width:44ch; line-height:1.6;
+  position:relative; z-index:1;
+}
 
-  /* ---------- Form ---------- */
-  form#passForm{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.05rem 0.9rem; }
-  .field{ display:flex; flex-direction:column; gap:0.35rem; position:relative; }
-  .field.full{ grid-column: 1 / -1; }
-  .field label{ font-family: var(--font-mono); font-size:0.66rem; letter-spacing:0.09em; text-transform:uppercase; color: var(--ink-soft); }
-  .field .hint{ font-size:0.68rem; color: var(--ink-soft); font-style:italic; }
-  .field input, .field select, .field textarea{
-    font-family: var(--font-body); font-size:0.94rem; padding:0.6rem 0.7rem;
-    border:none; border-bottom:1.5px solid var(--line); background: rgba(255,255,255,0.35);
-    color: var(--ink); border-radius:3px 3px 0 0; outline:none;
-    transition: background 0.2s, border-color 0.2s;
-    width:100%;
-  }
-  .field textarea{ resize:vertical; min-height:3em; font-family: var(--font-display); font-style:italic; }
-  .field input:focus, .field select:focus, .field textarea:focus{ background: rgba(255,255,255,0.65); border-color:#2E5077; }
+/* ---------- Form (premium stationery) ---------- */
+form#passForm{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 1.1rem; position:relative; z-index:1; }
 
-  .autocomplete-list{
-    position:absolute;
-    top: 100%;
-    left:0; right:0;
-    background: var(--paper-light);
-    border: 1px solid var(--line);
-    border-radius: 0 0 6px 6px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
-    z-index: 20;
-    max-height: 240px;
-    overflow-y: auto;
-    display:none;
-  }
-  .autocomplete-list.open{ display:block; }
-  .autocomplete-list button{
-    display:flex;
-    flex-direction:column;
-    width:100%;
-    text-align:left;
-    padding: 0.5rem 0.7rem;
-    border:none;
-    background:transparent;
-    cursor:pointer;
-    font-family: var(--font-body);
-    border-bottom: 1px solid rgba(28,43,57,0.08);
-  }
-  .autocomplete-list button:last-child{ border-bottom:none; }
-  .autocomplete-list button:hover, .autocomplete-list button.active{ background: rgba(46,80,119,0.1); }
-  .autocomplete-list .ac-main{ font-family: var(--font-mono); font-weight:700; font-size:0.85rem; }
-  .autocomplete-list .ac-sub{ font-size:0.72rem; color: var(--ink-soft); }
-  .data-status{
-    grid-column: 1/-1;
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    color: var(--ink-soft);
-    letter-spacing:0.02em;
-    margin-top:-0.4rem;
-  }
+/* subtle group headings injected before the first field of each group */
+.group-label{
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0.6rem 0 -0.4rem;
+  display:flex; align-items:center; gap:0.8rem;
+}
+.group-label:first-child{ margin-top:0; }
+.group-label::after{ content:""; flex:1; height:1px; background: var(--line-soft); }
 
-  .btn{
-    font-family: var(--font-mono); font-size:0.78rem; letter-spacing:0.06em; text-transform:uppercase;
-    padding:0.85rem 1.4rem; border-radius:3px; border:1.5px solid var(--ink); background: var(--ink);
-    color: var(--paper-light); cursor:pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .btn:hover{ transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
-  .btn:active{ transform: translateY(0); }
-  .btn-stamp{ grid-column: 1/-1; margin-top:0.4rem; background: var(--stamp); border-color: var(--stamp); }
-  .btn-ghost{ background:transparent; color: var(--ink); border:1.5px dashed var(--ink); width:100%; margin-top:1.6rem; }
-  .btn-ghost:hover{ background: rgba(28,43,57,0.06); }
-  .btn:disabled{ opacity:0.55; cursor:progress; transform:none; }
+.field{ display:flex; flex-direction:column; gap:0.45rem; position:relative; }
+.field.full{ grid-column: 1 / -1; }
+.field label{
+  font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.14em;
+  text-transform:uppercase; color: var(--ink-soft); font-weight:400;
+}
+.field .hint{ font-size:0.6rem; color: var(--taupe); font-style:normal; text-transform:none; letter-spacing:0; }
 
-  /* ---------- Collection ---------- */
-  .page-head{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.3rem; }
-  #count{ font-family: var(--font-mono); font-size:0.72rem; color: var(--ink-soft); white-space:nowrap; }
-  #emptyState{ margin-top:2.2rem; padding:2rem 1rem; text-align:center; border:1.5px dashed var(--line); border-radius:6px; color: var(--ink-soft); font-family: var(--font-display); font-style:italic; font-size:0.98rem; }
-  .collection{ display:flex; flex-direction:column; gap: 2.4rem; margin-top:1.7rem; }
+.field input, .field select, .field textarea{
+  font-family: var(--font-body); font-size:0.94rem; padding:0.5rem 0.15rem;
+  border:none; border-bottom:1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0.12));
+  color: var(--ink); border-radius:2px 2px 0 0; outline:none;
+  transition: background 0.25s ease;
+  width:100%;
+}
+.field input::placeholder, .field textarea::placeholder{ color: var(--taupe); }
+.field textarea{ resize:vertical; min-height:3.2em; font-family: var(--font-display); font-style:italic; font-size:1rem; }
 
-  /* ---------- Boarding pass ---------- */
-  .pass-card{ display:flex; flex-direction:column; align-items:stretch; min-width:0; }
-  .pass-scroll{
-    overflow-x: auto;
-    overflow-y: visible;
-    padding: 18px 18px 8px 4px;
-    margin: -18px -18px -8px -4px;
-  }
-  .capture-frame{
-    display:inline-block;
-    min-width: 100%;
-    padding: 16px 16px 4px 4px;
-  }
+/* animated underline (left → right) sitting under each control */
+.field::after{
+  content:""; position:absolute; left:0; bottom:0; height:1.5px; width:100%;
+  background: var(--ink); transform: scaleX(0); transform-origin:left center;
+  transition: transform 0.32s cubic-bezier(.2,.7,.3,1);
+}
+.field:focus-within::after{ transform: scaleX(1); }
+.field:focus-within input, .field:focus-within select, .field:focus-within textarea{
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+}
 
-  .boarding-pass{
-    --accent: #1C2B39;
-    --accent-soft: #DEC99C;
-    --tilt: 0deg;
-    position:relative;
-    display:flex;
-    width: 100%;
-    min-width: 460px;
-    background: var(--paper-light);
-    border-radius: 10px;
-    box-shadow: 0 14px 30px -12px rgba(0,0,0,0.45);
-    transform: rotate(var(--tilt));
-    overflow:visible;
-  }
+/* tiny accent indicator when a valid airport/airline was picked
+   (JS sets data-code on the input when a suggestion is selected) */
+.field input[data-code]{ padding-right:1.1rem; }
+.field input[data-code] + .autocomplete-list ~ *{}
+.field:has(input[data-code])::before{
+  content:""; position:absolute; right:2px; top:1.85rem; width:6px; height:6px; border-radius:50%;
+  background: var(--ink-soft); box-shadow: 0 0 0 3px rgba(83,107,122,0.15);
+}
 
-  .accent-stripe{
-    position:absolute; top:0; left:0; right:0; height:6px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
-    border-radius: 10px 10px 0 0;
-  }
+/* autocomplete = paper index cards */
+.autocomplete-list{
+  position:absolute; top: calc(100% + 6px); left:0; right:0;
+  background:
+    linear-gradient(180deg, var(--paper-light), var(--paper));
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  box-shadow: 0 16px 30px -12px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.6) inset;
+  z-index: 20; max-height: 250px; overflow-y: auto; display:none;
+  padding:4px;
+}
+.autocomplete-list.open{ display:block; animation: acFade 0.16s ease both; }
+@keyframes acFade{ from{ opacity:0; transform: translateY(-4px); } to{ opacity:1; transform:none; } }
+.autocomplete-list button{
+  display:flex; flex-direction:column; gap:2px; width:100%; text-align:left;
+  padding: 0.55rem 0.7rem; border:none; background:transparent; cursor:pointer;
+  font-family: var(--font-body); border-radius:2px; position:relative;
+  border-bottom: 1px solid var(--line-soft);
+}
+.autocomplete-list button:last-child{ border-bottom:none; }
+.autocomplete-list button:hover, .autocomplete-list button.active{ background: rgba(142,52,56,0.07); }
+.autocomplete-list button.active::before,
+.autocomplete-list button:hover::before{
+  content:""; position:absolute; left:0; top:6px; bottom:6px; width:2px; border-radius:2px;
+  background: var(--stamp);
+}
+.autocomplete-list .ac-main{ font-family: var(--font-mono); font-weight:700; font-size:0.82rem; color:var(--ink); }
+.autocomplete-list .ac-sub{ font-size:0.7rem; color: var(--ink-soft); }
 
-  .tape{
-    position:absolute; top:-10px; left:34px; width:58px; height:22px;
-    background: rgba(216,184,120,0.55); border:1px solid rgba(176,141,87,0.4);
-    box-shadow: 0 3px 5px rgba(0,0,0,0.15); transform: rotate(-5deg); z-index:3;
-  }
+.data-status{
+  grid-column: 1/-1;
+  font-family: var(--font-mono); font-size: 0.58rem; color: var(--taupe);
+  letter-spacing:0.04em; margin-top:-0.2rem;
+}
 
-  .stamp-badge{
-    position:absolute; top:-8px; right:-8px; width:60px; height:60px; border-radius:50%;
-    border: 2px dashed var(--accent); color: var(--accent);
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    font-family: var(--font-mono); font-size:0.5rem; font-weight:700; letter-spacing:0.04em; line-height:1.15;
-    transform: rotate(-12deg); background: rgba(248,241,221,0.9); z-index:3; padding:4px;
-  }
+/* ---------- Buttons ---------- */
+.btn{
+  font-family: var(--font-mono); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+  padding:0.9rem 1.4rem; border-radius:3px; border:1.5px solid var(--ink); background: var(--ink);
+  color: var(--paper-light); cursor:pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+.btn:hover{ transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.25); }
+.btn:active{ transform: translateY(0); }
 
-  .stub-main{
-    flex: 1 1 auto; padding: 1.5rem 1.5rem 1.2rem; display:flex; flex-direction:column; gap:0.95rem;
-    border-radius:10px 0 0 10px; min-width:0;
-  }
+/* stamp button = burgundy rubber stamp */
+.btn-stamp{
+  grid-column: 1/-1; margin-top:0.8rem;
+  background:
+    radial-gradient(120% 140% at 30% 20%, rgba(255,255,255,0.10), transparent 50%),
+    var(--stamp);
+  border: 2px solid var(--stamp-2);
+  border-radius: 4px;
+  color: #F6E7D8;
+  letter-spacing: 0.2em;
+  transform: rotate(-0.6deg);
+  box-shadow: 0 6px 16px -6px rgba(142,52,56,0.6), inset 0 0 0 1px rgba(246,231,216,0.14);
+  position:relative;
+}
+.btn-stamp::after{
+  content:""; position:absolute; inset:3px; border:1px dashed rgba(246,231,216,0.35); border-radius:3px; pointer-events:none;
+}
+.btn-stamp:hover{ transform: rotate(-0.6deg) translateY(-2px); }
+.btn-stamp:active{ transform: rotate(-0.6deg) scale(0.97); box-shadow: 0 2px 8px -4px rgba(142,52,56,0.7), inset 0 0 20px rgba(0,0,0,0.18); }
 
-  .bp-top{ display:flex; align-items:center; justify-content:space-between; gap:0.6rem; }
-  .airline{ display:flex; align-items:center; gap:0.5rem; min-width:0; }
-  .airline img.logo{ width:22px; height:22px; object-fit:contain; border-radius:3px; flex-shrink:0; }
-  .airline .plane-icon{ font-size:1rem; transform: rotate(45deg); display:inline-block; color: var(--accent); flex-shrink:0; }
-  .airline-name{
-    font-family: var(--font-mono); font-weight:600; font-size:0.72rem; letter-spacing:0.05em;
-    text-transform:uppercase; color: var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .class-tag{
-    font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.08em; text-transform:uppercase;
-    padding:0.25rem 0.55rem; border:1px solid var(--ink); border-radius:20px; white-space:nowrap; flex-shrink:0;
-  }
+.btn-ghost{
+  background:transparent; color: var(--ink); border:1.5px dashed var(--line);
+  width:100%; margin-top:1.8rem; letter-spacing:0.16em;
+}
+.btn-ghost:hover{ background: rgba(23,35,44,0.05); border-color: var(--ink); }
+.btn:disabled{ opacity:0.55; cursor:progress; transform:none; }
 
-  .route{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:0.8rem; }
-  .airport{ display:flex; flex-direction:column; min-width:0; }
-  .airport .code{ font-family: var(--font-mono); font-weight:700; font-size: clamp(1.7rem, 4.2vw, 2.4rem); line-height:1; letter-spacing:0.01em; }
-  .airport .code.approx::after{ content:"~"; font-size:1rem; vertical-align:super; color: var(--ink-soft); margin-left:2px; }
-  .airport .aname{ font-size:0.68rem; color: var(--ink-soft); margin-top:0.3rem; max-width:14ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .airport.to{ align-items:flex-end; text-align:right; }
+/* ---------- Collection header ---------- */
+.page-head{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:0.5rem; position:relative; z-index:1; }
+/* inventory label look for the count */
+#count{
+  font-family: var(--font-mono); font-size:0.6rem; color: var(--ink-soft);
+  white-space:nowrap; letter-spacing:0.1em; text-transform:uppercase;
+  border:1px solid var(--line); border-radius:2px; padding:0.28rem 0.6rem;
+  background: rgba(255,255,255,0.25);
+}
 
-  .path{ position:relative; height:20px; display:flex; align-items:center; justify-content:center; }
-  .path .dashed-line{ width:100%; height:0; border-top:1.6px dashed var(--ink-soft); }
-  .path .plane-mid{ position:absolute; background: var(--paper-light); padding:0 4px; font-size:0.95rem; color: var(--accent); transform: rotate(90deg); }
+/* ---------- Empty state (archival scrapbook page) ---------- */
+#emptyState{
+  margin-top:2rem; padding:3rem 1.4rem; text-align:center;
+  border:1.5px dashed var(--line); border-radius:5px;
+  color: var(--ink-soft); background: rgba(255,255,255,0.14);
+  position:relative; z-index:1;
+}
+#emptyState .empty-plane{ color: var(--taupe); margin-bottom:0.4rem; }
+#emptyState .empty-route{
+  width:150px; height:1px; margin:0.9rem auto 1.3rem;
+  background-image: linear-gradient(90deg, var(--taupe) 40%, transparent 0);
+  background-size: 8px 1px; background-repeat: repeat-x;
+}
+#emptyState .empty-title{
+  font-family: var(--font-mono); font-size:0.68rem; letter-spacing:0.24em; text-transform:uppercase;
+  color: var(--ink-soft); margin-bottom:0.5rem;
+}
+#emptyState .empty-sub{
+  font-family: var(--font-display); font-style:italic; font-size:0.95rem; color: var(--taupe);
+}
 
-  .details-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:0.7rem 0.5rem; padding-top:0.3rem; border-top:1px solid var(--line); }
-  .details-grid > div{ display:flex; flex-direction:column; gap:0.15rem; min-width:0; }
-  .details-grid label{ font-family: var(--font-mono); font-size:0.56rem; letter-spacing:0.06em; text-transform:uppercase; color: var(--ink-soft); }
-  .details-grid span{ font-family: var(--font-mono); font-size:0.85rem; overflow-wrap:anywhere; }
+.collection{ display:flex; flex-direction:column; gap: 2.6rem; margin-top:1.9rem; position:relative; z-index:1; }
 
-  .memory-note{ font-family: var(--font-display); font-style:italic; font-size:0.86rem; color: var(--ink-soft); padding-top:0.5rem; border-top:1px dashed var(--line); }
+/* =====================================================
+   BOARDING PASS  (captured by html2canvas — keep CSS
+   inside here to functions html2canvas supports)
+===================================================== */
+.pass-card{ display:flex; flex-direction:column; align-items:stretch; min-width:0; }
+/* subtle physical placement variation (does not affect capture frame) */
+.pass-card:nth-child(odd){ margin-left: 2px; }
+.pass-card:nth-child(even){ margin-left: -2px; }
 
-  .perforation{
-    position:relative; width:0; flex-shrink:0; margin: 8px 0;
-    border-left: 2px dashed var(--paper-dark);
-    background-image: radial-gradient(circle, var(--desk-2) 3px, transparent 3.4px);
-    background-size: 3px 15px; background-repeat: repeat-y; background-position: -1.5px 0;
-  }
-  .perforation::before, .perforation::after{ content:""; position:absolute; left:50%; transform:translateX(-50%); width:20px; height:20px; border-radius:50%; background: var(--desk-2); }
-  .perforation::before{ top:-10px; }
-  .perforation::after{ bottom:-10px; }
+.pass-scroll{
+  overflow-x: auto; overflow-y: visible;
+  padding: 22px 20px 12px 8px;
+  margin: -22px -20px -12px -8px;
+}
+.capture-frame{
+  display:inline-block; min-width: 100%;
+  padding: 20px 20px 10px 8px;
+}
 
-  .stub-tear{
-    flex: 0 0 clamp(112px, 16vw, 148px); padding: 1.5rem 0.85rem 1.2rem; display:flex; flex-direction:column; justify-content:space-between; gap:0.7rem;
-    border-radius: 0 10px 10px 0;
-    background: var(--paper-light); /* fallback for renderers without color-mix */
-    background: color-mix(in srgb, var(--accent) 8%, var(--paper-light));
-  }
-  .stub-row{ display:flex; align-items:baseline; justify-content:space-between; gap:0.4rem; }
-  .stub-code{ font-family: var(--font-mono); font-weight:700; font-size:1.05rem; }
-  .stub-flight{ font-family: var(--font-mono); font-size:0.72rem; color: var(--ink-soft); }
-  /* PNR / booking reference — stamped on the tear-off stub */
-  .stub-pnr{
-    display:flex; flex-direction:column; gap:0.15rem;
-    padding:0.4rem 0.5rem; border:1.5px dashed var(--accent);
-    border-radius:5px; transform: rotate(-1.5deg); align-self:flex-start;
-  }
-  .stub-pnr label{ font-family: var(--font-mono); font-size:0.46rem; text-transform:uppercase; letter-spacing:0.08em; color: var(--ink-soft); }
-  .stub-pnr span{ font-family: var(--font-mono); font-weight:700; font-size:0.98rem; letter-spacing:0.14em; color: var(--accent); }
-  .stub-mini{ display:grid; grid-template-columns: 1fr 1fr; gap:0.3rem 0.5rem; }
-  .stub-mini div{ display:flex; flex-direction:column; }
-  .stub-mini label{ font-family: var(--font-mono); font-size:0.5rem; text-transform:uppercase; color: var(--ink-soft); letter-spacing:0.05em; }
-  .stub-mini span{ font-family: var(--font-mono); font-size:0.74rem; }
-  .barcode{
-    width:100%; height:34px;
-    background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 6px, transparent 6px 7px, var(--ink) 7px 10px, transparent 10px 12px, var(--ink) 12px 13px, transparent 13px 16px);
-  }
+.boarding-pass{
+  --accent: #17232C;
+  --accent-soft: #B08A52;
+  --tilt: 0deg;
+  position:relative; display:flex; width: 100%; min-width: 470px;
+  /* warm ivory paper with faint horizontal grain + security pattern */
+  background:
+    repeating-linear-gradient(90deg, rgba(23,35,44,0.015) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, rgba(23,35,44,0.020) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #FCF7EA, #F7EEDA 60%, #F3E8CF);
+  border-radius: 11px;
+  box-shadow:
+    0 18px 34px -14px rgba(0,0,0,0.5),
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 0 0 1px rgba(23,35,44,0.05);
+  /* keep rotation subtle (~±0.5deg) without changing the JS-provided value */
+  transform: rotate(calc(var(--tilt) * 0.6));
+  overflow:visible;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.pass-card:hover .boarding-pass{
+  transform: rotate(calc(var(--tilt) * 0.6)) translateY(-4px);
+  box-shadow: 0 26px 46px -16px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.7) inset, 0 0 0 1px rgba(23,35,44,0.05);
+}
 
-  .card-actions{ display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.7rem; flex-wrap:wrap; }
-  .card-actions button{
-    font-family: var(--font-mono); font-size:0.66rem; letter-spacing:0.06em; text-transform:uppercase;
-    padding:0.45rem 0.75rem; border-radius:3px; border:1.5px solid var(--ink); background:transparent;
-    color: var(--ink); cursor:pointer; transition: background 0.15s, color 0.15s;
-  }
-  .card-actions button:hover{ background: var(--ink); color: var(--paper-light); }
-  .card-actions button.danger{ border-color: #9C3B3B; color:#9C3B3B; }
-  .card-actions button.danger:hover{ background: #9C3B3B; color:#fff; }
-  .card-actions button:disabled{ opacity:0.55; cursor:progress; }
+.accent-stripe{
+  position:absolute; top:0; left:0; right:0; height:5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  border-radius: 11px 11px 0 0;
+}
 
-  .pass-enter{ opacity:0; transform: translateY(24px) scale(0.98); }
-  .pass-enter-active{ opacity:1; transition: opacity 0.5s ease, transform 0.55s cubic-bezier(.2,.8,.3,1.1); }
-  .pass-exit{ transition: opacity 0.3s ease, transform 0.3s ease; opacity:0; transform: translateY(10px) scale(0.96); }
+/* realistic masking tape */
+.tape{
+  position:absolute; top:-11px; left:38px; width:66px; height:24px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 3px, transparent 3px 6px),
+    linear-gradient(180deg, rgba(214,196,150,0.62), rgba(198,176,120,0.5));
+  border-left:1px solid rgba(176,138,82,0.35); border-right:1px solid rgba(176,138,82,0.35);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.16); transform: rotate(-4deg); z-index:3;
+}
+.tape::after{ content:""; position:absolute; inset:0; background: linear-gradient(90deg, rgba(255,255,255,0.25), transparent 40%, transparent 60%, rgba(255,255,255,0.18)); }
 
-  @media (max-width: 640px){
-    form#passForm{ grid-template-columns: 1fr; }
-    .boarding-pass{ min-width: 500px; }
-  }
+/* faded rubber "BOARDED" stamp */
+.stamp-badge{
+  position:absolute; top:-6px; right:-6px; width:66px; height:66px; border-radius:50%;
+  border: 2px solid var(--stamp); color: var(--stamp);
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family: var(--font-mono); font-size:0.48rem; font-weight:700; letter-spacing:0.06em; line-height:1.25;
+  transform: rotate(-11deg); z-index:3; padding:5px; opacity:0.72;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(142,52,56,0.06), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(142,52,56,0.35);
+}
+.stamp-badge::before{
+  content:""; position:absolute; inset:4px; border:1px dashed rgba(142,52,56,0.5); border-radius:50%;
+}
 
-  footer{ max-width:1180px; margin:3rem auto 0; padding:0 1.4rem; text-align:center; color: rgba(248,241,221,0.45); font-family: var(--font-mono); font-size:0.7rem; letter-spacing:0.04em; position:relative; z-index:1; }
+.stub-main{
+  flex: 1 1 auto; padding: 1.7rem 1.6rem 1.35rem; display:flex; flex-direction:column; gap:1.15rem;
+  border-radius:11px 0 0 11px; min-width:0;
+}
 
-  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; } }
-  :focus-visible{ outline: 2px solid var(--brass-light); outline-offset:2px; }
+.bp-top{ display:flex; align-items:center; justify-content:space-between; gap:0.6rem; }
+.airline{ display:flex; align-items:center; gap:0.6rem; min-width:0; }
+.airline img.logo{ width:28px; height:28px; object-fit:contain; border-radius:5px; flex-shrink:0; box-shadow: 0 1px 3px rgba(0,0,0,0.12); background:#fff; }
+.airline .plane-icon{ font-size:1rem; transform: rotate(45deg); display:inline-block; color: var(--accent); flex-shrink:0; }
+.airline-name{
+  font-family: var(--font-mono); font-weight:700; font-size:0.74rem; letter-spacing:0.08em;
+  text-transform:uppercase; color: var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.class-tag{
+  font-family: var(--font-mono); font-size:0.56rem; letter-spacing:0.14em; text-transform:uppercase;
+  padding:0.3rem 0.6rem; border:1px solid var(--line); border-radius:2px; white-space:nowrap; flex-shrink:0;
+  color: var(--ink-soft); background: rgba(23,35,44,0.03);
+}
+
+/* route = centerpiece */
+.route{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:1rem; padding:0.4rem 0 0.5rem; }
+.airport{ display:flex; flex-direction:column; min-width:0; }
+.airport .code{
+  font-family: var(--font-mono); font-weight:700; font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height:1; letter-spacing:0.02em; color: var(--ink);
+}
+.airport .code.approx::after{ content:"~"; font-size:1rem; vertical-align:super; color: var(--taupe); margin-left:2px; }
+.airport .aname{
+  font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.12em; text-transform:uppercase;
+  color: var(--ink-soft); margin-top:0.5rem; max-width:15ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.airport.to{ align-items:flex-end; text-align:right; }
+
+.path{ position:relative; height:22px; display:flex; align-items:center; justify-content:center; }
+.path .dashed-line{
+  width:100%; height:0; border-top:1.4px dashed var(--taupe);
+  position:relative;
+}
+/* endpoint dots */
+.path::before, .path::after{
+  content:""; position:absolute; top:50%; width:5px; height:5px; border-radius:50%;
+  background: var(--brass); transform: translateY(-50%);
+}
+.path::before{ left:0; }
+.path::after{ right:0; }
+.path .plane-mid{
+  position:absolute; background: #F8EFDC; padding:0 7px; font-size:0.85rem; color: var(--accent);
+  transform: rotate(90deg);
+}
+
+/* details grid */
+.details-grid{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap:0.85rem 0.6rem;
+  padding-top:1rem; border-top:1px solid var(--line);
+}
+.details-grid > div{ display:flex; flex-direction:column; gap:0.25rem; min-width:0; }
+.details-grid label{ font-family: var(--font-mono); font-size:0.52rem; letter-spacing:0.12em; text-transform:uppercase; color: var(--taupe); }
+.details-grid span{ font-family: var(--font-mono); font-size:0.86rem; font-weight:700; color:var(--ink); overflow-wrap:anywhere; }
+
+.memory-note{
+  font-family: var(--font-display); font-style:italic; font-size:0.95rem; color: var(--ink-soft);
+  padding-top:0.9rem; margin-top:0.1rem; border-top:1px dashed var(--line); position:relative; line-height:1.5;
+}
+.memory-note::before{
+  content:"\201C"; font-family: var(--font-display); font-size:2.2rem; line-height:0;
+  color: var(--taupe); opacity:0.5; margin-right:0.15rem; vertical-align:-0.4rem;
+}
+
+/* perforation / tear line */
+.perforation{
+  position:relative; width:0; flex-shrink:0; margin: 10px 0;
+  border-left: 2px dashed var(--paper-dark);
+  background-image: radial-gradient(circle, var(--desk-2) 3px, transparent 3.4px);
+  background-size: 3px 15px; background-repeat: repeat-y; background-position: -1.5px 0;
+  box-shadow: -6px 0 8px -6px rgba(0,0,0,0.18);
+}
+.perforation::before, .perforation::after{
+  content:""; position:absolute; left:50%; transform:translateX(-50%);
+  width:18px; height:18px; border-radius:50%; background: var(--desk-2);
+}
+.perforation::before{ top:-9px; }
+.perforation::after{ bottom:-9px; }
+
+/* tear-off stub — slightly darker paper */
+.stub-tear{
+  flex: 0 0 clamp(122px, 17vw, 156px);
+  padding: 1.7rem 0.95rem 1.35rem; display:flex; flex-direction:column; justify-content:space-between; gap:0.85rem;
+  border-radius: 0 11px 11px 0;
+  background: #EFE1C1; /* solid fallback for html2canvas */
+  background: color-mix(in srgb, var(--accent) 7%, #EEDFBE);
+}
+.stub-row{ display:flex; align-items:baseline; justify-content:space-between; gap:0.4rem; }
+.stub-code{ font-family: var(--font-mono); font-weight:700; font-size:1rem; letter-spacing:0.03em; color:var(--ink); }
+.stub-flight{ font-family: var(--font-mono); font-size:0.72rem; color: var(--ink-soft); }
+
+/* PNR = main visual element on the stub */
+.stub-pnr{
+  display:flex; flex-direction:column; gap:0.25rem;
+  padding:0.55rem 0.6rem; border:1.5px solid var(--stamp);
+  border-radius:3px; background: rgba(142,52,56,0.05);
+}
+.stub-pnr label{ font-family: var(--font-mono); font-size:0.44rem; text-transform:uppercase; letter-spacing:0.16em; color: var(--stamp); }
+.stub-pnr span{ font-family: var(--font-mono); font-weight:700; font-size:1.2rem; letter-spacing:0.2em; color: var(--stamp); }
+
+.stub-mini{ display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem 0.5rem; }
+.stub-mini div{ display:flex; flex-direction:column; gap:0.15rem; }
+.stub-mini label{ font-family: var(--font-mono); font-size:0.46rem; text-transform:uppercase; color: var(--taupe); letter-spacing:0.1em; }
+.stub-mini span{ font-family: var(--font-mono); font-size:0.76rem; font-weight:700; color:var(--ink); }
+
+.barcode{
+  width:100%; height:40px;
+  background: repeating-linear-gradient(90deg,
+    var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 6px, transparent 6px 7px,
+    var(--ink) 7px 10px, transparent 10px 12px, var(--ink) 12px 13px, transparent 13px 16px);
+  opacity:0.9;
+}
+
+/* ---------- Card actions (archival controls) ---------- */
+.card-actions{ display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.9rem; flex-wrap:wrap; }
+.card-actions button{
+  font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.14em; text-transform:uppercase;
+  padding:0.45rem 0.8rem; border-radius:2px; border:1px solid var(--line); background:transparent;
+  color: var(--ink-soft); cursor:pointer; transition: background 0.16s, color 0.16s, border-color 0.16s;
+}
+.card-actions button:hover{ background: var(--ink); color: var(--paper-light); border-color: var(--ink); }
+.card-actions button.danger{ border-color: rgba(142,52,56,0.5); color: var(--stamp); }
+.card-actions button.danger:hover{ background: var(--stamp); border-color: var(--stamp); color:#fff; }
+.card-actions button:disabled{ opacity:0.55; cursor:progress; }
+
+/* ---------- Micro-interactions ---------- */
+.pass-enter{ opacity:0; transform: translateY(26px) scale(0.985) rotate(-0.6deg); }
+.pass-enter-active{ opacity:1; transform:none; transition: opacity 0.55s ease, transform 0.6s cubic-bezier(.2,.8,.3,1.05); }
+.pass-exit{ transition: opacity 0.32s ease, transform 0.32s ease; opacity:0; transform: translateY(10px) scale(0.96); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px){
+  header.cover{ padding: 4rem 1.2rem 2.4rem; }
+  form#passForm{ grid-template-columns: 1fr; }
+  .boarding-pass{ min-width: 500px; }
+  .page{ padding: 2rem 1.4rem 2.2rem; }
+}
+
+footer{
+  max-width:1220px; margin:3.5rem auto 0; padding:0 1.4rem; text-align:center;
+  color: rgba(248,241,221,0.4); font-family: var(--font-mono); font-size:0.62rem; letter-spacing:0.14em;
+  text-transform:uppercase; position:relative; z-index:1;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  .field::after{ transition:none; }
+}
+:focus-visible{ outline: 2px solid var(--brass); outline-offset:2px; }
