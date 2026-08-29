@@ -12,20 +12,24 @@
 <body>
 
 <header class="cover">
-  <span class="eyebrow">✈ a pocket for every departure</span>
+  <span class="eyebrow">a pocket for every departure</span>
   <h1>The Boarding Pass Diary</h1>
   <p class="tagline">Every trip deserves a stub worth keeping.</p>
+  <div class="cover-mark"><span>&#9992;</span></div>
   <div class="airmail-border"></div>
+  <span class="archive-meta">Travel Archive &middot; Personal Edition</span>
 </header>
 
 <main class="book">
 
   <section class="page form-page">
+    <div class="section-index">01 / Journey Details</div>
     <h2>New Entry</h2>
     <p class="page-sub">Fill in a trip and stamp it into your diary. Start typing a city or airline to pick the real code.</p>
     <form id="passForm" novalidate autocomplete="off">
+      <div class="group-label">Passenger</div>
       <div class="field">
-        <label for="lastName">Passenger — Last name</label>
+        <label for="lastName">Last name</label>
         <input id="lastName" name="lastName" type="text" placeholder="Sharma" required>
       </div>
       <div class="field">
@@ -33,6 +37,7 @@
         <input id="firstName" name="firstName" type="text" placeholder="Aarav" required>
       </div>
 
+      <div class="group-label">Journey</div>
       <div class="field">
         <label for="from">From (city or airport)</label>
         <input id="from" name="from" type="text" placeholder="Delhi" required>
@@ -44,6 +49,7 @@
         <div class="autocomplete-list" id="toList"></div>
       </div>
 
+      <div class="group-label">Flight</div>
       <div class="field">
         <label for="airline">Airline</label>
         <input id="airline" name="airline" type="text" placeholder="Air India" required>
@@ -53,7 +59,6 @@
         <label for="flightNo">Flight No.</label>
         <input id="flightNo" name="flightNo" type="text" placeholder="204" required>
       </div>
-
       <div class="field">
         <label for="date">Date</label>
         <input id="date" name="date" type="date" required>
@@ -68,6 +73,7 @@
         </select>
       </div>
 
+      <div class="group-label">Boarding</div>
       <div class="field">
         <label for="gate">Gate</label>
         <input id="gate" name="gate" type="text" placeholder="B12">
@@ -76,7 +82,6 @@
         <label for="seat">Seat</label>
         <input id="seat" name="seat" type="text" placeholder="14A">
       </div>
-
       <div class="field">
         <label for="boarding">Boarding Time</label>
         <input id="boarding" name="boarding" type="time">
@@ -86,6 +91,7 @@
         <input id="pnr" name="pnr" type="text" placeholder="6 chars" maxlength="6">
       </div>
 
+      <div class="group-label">Memory</div>
       <div class="field full">
         <label for="note">A memory (optional)</label>
         <textarea id="note" name="note" placeholder="Window seat, first snow from above."></textarea>
@@ -102,13 +108,19 @@
   </div>
 
   <section class="page collection-page">
+    <div class="section-index">02 / The Archive</div>
     <div class="page-head">
       <h2>Collected Passes</h2>
       <span id="count">0 passes</span>
     </div>
     <p class="page-sub">Nothing is saved on a server — download a stub and it's yours to keep, like the paper ones in a shoebox.</p>
 
-    <div id="emptyState">Your diary is empty. Add your first boarding pass on the left.</div>
+    <div id="emptyState">
+      <div class="empty-plane">&#9992;</div>
+      <div class="empty-route"></div>
+      <div class="empty-title">No journeys archived</div>
+      <div class="empty-sub">Your first boarding pass will appear here.</div>
+    </div>
     <div id="collection" class="collection"></div>
 
     <button id="exportAll" class="btn btn-ghost" hidden>Export whole diary as PDF</button>
