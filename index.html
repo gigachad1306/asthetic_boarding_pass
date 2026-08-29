@@ -3,186 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voyage — The Boarding Pass Diary</title>
-
+<title>The Boarding Pass Diary</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<div class="app">
-<div class="shell">
+<header class="cover">
+  <span class="eyebrow">✈ a pocket for every departure</span>
+  <h1>The Boarding Pass Diary</h1>
+  <p class="tagline">Every trip deserves a stub worth keeping.</p>
+  <div class="airmail-border"></div>
+</header>
 
-  <!-- HEADER -->
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">✈</div>
-      <div>
-        <div class="brand-name">Voyage</div>
-        <div class="brand-sub">The Boarding Pass Diary</div>
+<main class="book">
+
+  <section class="page form-page">
+    <h2>New Entry</h2>
+    <p class="page-sub">Fill in a trip and stamp it into your diary. Start typing a city or airline to pick the real code.</p>
+    <form id="passForm" novalidate autocomplete="off">
+      <div class="field">
+        <label for="lastName">Passenger — Last name</label>
+        <input id="lastName" name="lastName" type="text" placeholder="Sharma" required>
       </div>
-    </div>
-    <div class="trip-count"><span id="tripCount">0</span> PASSES</div>
-  </header>
+      <div class="field">
+        <label for="firstName">First name</label>
+        <input id="firstName" name="firstName" type="text" placeholder="Aarav" required>
+      </div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <h1>Your journeys,<br><span>beautifully kept.</span></h1>
-    <p>
-      Turn every flight into a keepsake boarding pass. Start typing a city or
-      airline to pull the real codes, stamp it into your diary, and download a
-      stub whenever you like — nothing leaves this browser.
-    </p>
+      <div class="field">
+        <label for="from">From (city or airport)</label>
+        <input id="from" name="from" type="text" placeholder="Delhi" required>
+        <div class="autocomplete-list" id="fromList"></div>
+      </div>
+      <div class="field">
+        <label for="to">To (city or airport)</label>
+        <input id="to" name="to" type="text" placeholder="Reykjavik" required>
+        <div class="autocomplete-list" id="toList"></div>
+      </div>
+
+      <div class="field">
+        <label for="airline">Airline</label>
+        <input id="airline" name="airline" type="text" placeholder="Air India" required>
+        <div class="autocomplete-list" id="airlineList"></div>
+      </div>
+      <div class="field">
+        <label for="flightNo">Flight No.</label>
+        <input id="flightNo" name="flightNo" type="text" placeholder="204" required>
+      </div>
+
+      <div class="field">
+        <label for="date">Date</label>
+        <input id="date" name="date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="cls">Class</label>
+        <select id="cls" name="cls">
+          <option value="ECONOMY">Economy</option>
+          <option value="PREMIUM">Premium</option>
+          <option value="BUSINESS">Business</option>
+          <option value="FIRST">First</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="gate">Gate</label>
+        <input id="gate" name="gate" type="text" placeholder="B12">
+      </div>
+      <div class="field">
+        <label for="seat">Seat</label>
+        <input id="seat" name="seat" type="text" placeholder="14A">
+      </div>
+
+      <div class="field">
+        <label for="boarding">Boarding Time</label>
+        <input id="boarding" name="boarding" type="time">
+      </div>
+      <div class="field">
+        <label for="pnr">PNR <span class="hint">(auto if blank)</span></label>
+        <input id="pnr" name="pnr" type="text" placeholder="6 chars" maxlength="6">
+      </div>
+
+      <div class="field full">
+        <label for="note">A memory (optional)</label>
+        <textarea id="note" name="note" placeholder="Window seat, first snow from above."></textarea>
+      </div>
+
+      <div class="data-status" id="dataStatus">Loading airport &amp; airline data…</div>
+
+      <button type="submit" class="btn btn-stamp">Stamp it into the diary</button>
+    </form>
   </section>
 
-  <!-- WORKSPACE -->
-  <main class="workspace">
+  <div class="spine" aria-hidden="true">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+  </div>
 
-    <!-- FORM -->
-    <aside class="form-card">
-      <div class="form-title">Add a journey</div>
-      <div class="form-description">Enter your flight details and we'll compose an aesthetic boarding pass for your diary.</div>
+  <section class="page collection-page">
+    <div class="page-head">
+      <h2>Collected Passes</h2>
+      <span id="count">0 passes</span>
+    </div>
+    <p class="page-sub">Nothing is saved on a server — download a stub and it's yours to keep, like the paper ones in a shoebox.</p>
 
-      <form id="passForm" novalidate autocomplete="off">
+    <div id="emptyState">Your diary is empty. Add your first boarding pass on the left.</div>
+    <div id="collection" class="collection"></div>
 
-        <div class="section-label">Passenger</div>
-        <div class="form-row">
-          <div class="field">
-            <label>Last name</label>
-            <input id="lastName" type="text" placeholder="Sharma" required>
-          </div>
-          <div class="field">
-            <label>First name</label>
-            <input id="firstName" type="text" placeholder="Aarav" required>
-          </div>
-        </div>
+    <button id="exportAll" class="btn btn-ghost" hidden>Export whole diary as PDF</button>
+  </section>
 
-        <div class="section-label">Airline</div>
-        <div class="field">
-          <label>Airline <span class="hint">name or code</span></label>
-          <input id="airline" type="text" placeholder="Air India" required>
-          <div class="autocomplete-list" id="airlineList"></div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Flight no.</label>
-            <input id="flightNo" type="text" placeholder="204" required>
-          </div>
-          <div class="field">
-            <label>Class</label>
-            <select id="cls">
-              <option value="ECONOMY">Economy</option>
-              <option value="PREMIUM">Premium</option>
-              <option value="BUSINESS">Business</option>
-              <option value="FIRST">First</option>
-            </select>
-          </div>
-        </div>
+</main>
 
-        <div class="section-label">Route</div>
-        <div class="field">
-          <label>From <span class="hint">city or airport</span></label>
-          <input id="from" type="text" placeholder="Delhi" required>
-          <div class="autocomplete-list" id="fromList"></div>
-        </div>
-        <div class="field">
-          <label>To <span class="hint">city or airport</span></label>
-          <input id="to" type="text" placeholder="Reykjavik" required>
-          <div class="autocomplete-list" id="toList"></div>
-        </div>
+<footer>Kept in this browser tab only &mdash; download each stub to hold onto it for good.</footer>
 
-        <div class="section-label">Flight information</div>
-        <div class="form-row">
-          <div class="field">
-            <label>Date</label>
-            <input id="date" type="date" required>
-          </div>
-          <div class="field">
-            <label>Boarding</label>
-            <input id="boarding" type="time" value="08:30">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Gate</label>
-            <input id="gate" type="text" placeholder="B12">
-          </div>
-          <div class="field">
-            <label>Seat</label>
-            <input id="seat" type="text" placeholder="14A">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Terminal</label>
-            <input id="terminal" type="text" placeholder="T3">
-          </div>
-          <div class="field">
-            <label>PNR <span class="hint">auto if blank</span></label>
-            <input id="pnr" type="text" placeholder="6 chars" maxlength="6">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>A memory <span class="hint">optional</span></label>
-          <input id="note" type="text" placeholder="Window seat, first snow from above.">
-        </div>
-
-        <div class="data-status" id="dataStatus">Loading airport &amp; airline data…</div>
-
-        <button class="primary-btn" type="submit">+ Stamp it into the diary</button>
-        <button class="secondary-btn" type="button" id="demoBtn">Fill a demo flight</button>
-      </form>
-    </aside>
-
-    <!-- PREVIEW + DIARY -->
-    <section class="preview-area">
-
-      <div class="preview-heading">
-        <div>
-          <h2>Live preview</h2>
-          <p>Your pass updates as you type.</p>
-        </div>
-      </div>
-
-      <div class="pass-wrap">
-        <div class="capture-frame">
-          <div id="livePass"></div>
-        </div>
-      </div>
-
-      <section class="entries">
-        <div class="entries-title">
-          <h2>Travel diary</h2>
-        </div>
-
-        <div id="emptyState" class="empty-state">
-          <div class="empty-icon">✈</div>
-          No journeys yet.<br>Add your first flight to start your diary.
-        </div>
-
-        <div id="collection" class="collection"></div>
-
-        <button id="exportAll" class="export-all" hidden>Export whole diary as PDF</button>
-      </section>
-
-    </section>
-
-  </main>
-
-  <footer class="footer">Keep travelling · Keep remembering</footer>
-
-</div>
-</div>
-
-<div id="toast" class="toast"></div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
