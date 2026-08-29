@@ -432,6 +432,7 @@
     return `rgb(${mix(a.r,b.r)}, ${mix(a.g,b.g)}, ${mix(a.b,b.b)})`;
   }
   const PAPER_LIGHT = '#F8F1DD';
+  const STUB_BASE = '#EEDFBE';   // matches .stub-tear base in styles.css
 
   function sanitizeClone(doc, dropLogos){
     if(dropLogos) doc.querySelectorAll('img.logo').forEach(img => img.remove());
@@ -440,8 +441,8 @@
       const accent = (bp.style.getPropertyValue('--accent') || '#1C2B39').trim();
       const tear = bp.querySelector('.stub-tear');
       if(tear){
-        try { tear.style.background = blendHex(accent, PAPER_LIGHT, 0.08); }
-        catch(_){ tear.style.background = PAPER_LIGHT; }
+        try { tear.style.background = blendHex(accent, STUB_BASE, 0.07); }
+        catch(_){ tear.style.background = STUB_BASE; }
       }
     });
   }
