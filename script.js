@@ -304,7 +304,7 @@
     const accent = (data.airlineCode && AIRLINE_COLORS[data.airlineCode]) || DEFAULT_ACCENT;
     const codeFromClass = data.fromApprox ? 'code approx' : 'code';
     const codeToClass = data.toApprox ? 'code approx' : 'code';
-    const logo = data.airlineCode ? `<img class="logo" src="${logoUrl(data.airlineCode)}" alt="" onerror="this.remove()">` : '';
+    const logo = data.airlineCode ? `<img class="logo" crossorigin="anonymous" src="${logoUrl(data.airlineCode)}" alt="" onerror="this.remove()">` : '';
 
     return `
       <div class="boarding-pass" style="--tilt:${tilt}; --accent:${accent.primary}; --accent-soft:${accent.secondary}">
@@ -400,37 +400,52 @@
     }, { once:true });
   }
 
+  /* Render a pass frame to a canvas. Cross-origin airline logos can taint the
+     canvas and make toBlob()/toDataURL() throw, which silently kills the whole
+     download — so we skip any element that fails to load with CORS. */
+  async function renderFrame(frameEl){
+    return html2canvas(frameEl, {
+      backgroundColor: '#F8F1DD',
+      scale: 3,
+      useCORS: true,
+      ignoreElements: (el) =>
+        el.tagName === 'IMG' && (!el.complete || el.naturalWidth === 0)
+    });
+  }
+
+  // Wrap canvas.toBlob in a promise so callers can await the actual file.
+  function canvasToBlob(canvas, type){
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        blob ? resolve(blob) : reject(new Error('Canvas is empty or tainted.'));
+      }, type);
+    });
+  }
+
   async function downloadPNG(frameEl, filenameBase){
-  const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
-  
-  // Create blob instead of data URL
-  canvas.toBlob((blob) => {
+    const canvas = await renderFrame(frameEl);
+    const blob = await canvasToBlob(canvas, 'image/png');
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filenameBase + '.png';
-    document.body.appendChild(link);  // Append to DOM
+    document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);  // Clean up
-  }, 'image/png');
-}
-
-async function downloadPDF(frameEl, filenameBase){
-  const canvas = await html2canvas(frameEl, { backgroundColor: '#F8F1DD', scale: 3, useCORS: true });
-  const { jsPDF } = window.jspdf;
-  const wMM = 200;
-  const hMM = (canvas.height / canvas.width) * wMM;
-  const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
-  
-  // Convert canvas to blob before adding to PDF
-  canvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    pdf.addImage(url, 'PNG', 0, 0, wMM, hMM);
-    pdf.save(filenameBase + '.pdf');
     URL.revokeObjectURL(url);
-  });
-}
+  }
+
+  async function downloadPDF(frameEl, filenameBase){
+    const canvas = await renderFrame(frameEl);
+    const { jsPDF } = window.jspdf;
+    const wMM = 200;
+    const hMM = (canvas.height / canvas.width) * wMM;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
+    // jsPDF.addImage needs a data URL / base64 — NOT a blob object URL.
+    const dataUrl = canvas.toDataURL('image/png');
+    pdf.addImage(dataUrl, 'PNG', 0, 0, wMM, hMM);
+    pdf.save(filenameBase + '.pdf');
+  }
 
   function onCardAction(e){
     const btn = e.target.closest('button[data-action]');
@@ -446,7 +461,12 @@ async function downloadPDF(frameEl, filenameBase){
     const originalLabel = btn.textContent;
     btn.disabled = true; btn.textContent = '...';
     const action = btn.dataset.action === 'png' ? downloadPNG(frame, base) : downloadPDF(frame, base);
-    action.finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
+    action
+      .catch(err => {
+        console.error('Download failed:', err);
+        alert('Sorry, that download failed. Please try again.');
+      })
+      .finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
   }
 
   form.addEventListener('submit', function(e){
@@ -492,7 +512,7 @@ async function downloadPDF(frameEl, filenameBase){
       const { jsPDF } = window.jspdf;
       let pdf = null;
       for(let i=0;i<frames.length;i++){
-        const canvas = await html2canvas(frames[i], { backgroundColor:'#F8F1DD', scale:2.5, useCORS:true });
+        const canvas = await renderFrame(frames[i]);
         const wMM = 200;
         const hMM = (canvas.height / canvas.width) * wMM;
         if(!pdf) pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM,hMM] });
@@ -500,6 +520,9 @@ async function downloadPDF(frameEl, filenameBase){
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
       }
       pdf.save('the-boarding-pass-diary.pdf');
+    } catch(err) {
+      console.error('Export failed:', err);
+      alert('Sorry, the diary export failed. Please try again.');
     } finally {
       exportAllBtn.disabled = false;
       exportAllBtn.textContent = 'Export whole diary as PDF';
