@@ -400,6 +400,38 @@
     }, { once:true });
   }
 
+  /* html2canvas (1.4.1) can't parse the CSS color-mix() function used for the
+     .stub-tear background, and throws "unsupported color function". We compute
+     the equivalent rgb() in JS and apply it to the clone so capture succeeds
+     while the live page keeps its color-mix tint. */
+  function hexToRgb(hex){
+    hex = (hex || '').trim().replace('#','');
+    if(hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const n = parseInt(hex, 16);
+    return { r:(n >> 16) & 255, g:(n >> 8) & 255, b:n & 255 };
+  }
+  function blendHex(hexA, hexB, weightA){
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    const mix = (x, y) => Math.round(x * weightA + y * (1 - weightA));
+    return `rgb(${mix(a.r,b.r)}, ${mix(a.g,b.g)}, ${mix(a.b,b.b)})`;
+  }
+  const PAPER_LIGHT = '#F8F1DD';
+
+  function sanitizeClone(doc, dropLogos){
+    if(dropLogos){
+      doc.querySelectorAll('img.logo').forEach(img => img.remove());
+    }
+    // Replace color-mix() stub backgrounds with a pre-computed rgb() equivalent.
+    doc.querySelectorAll('.boarding-pass').forEach(bp => {
+      const accent = (bp.style.getPropertyValue('--accent') || '#1C2B39').trim();
+      const tear = bp.querySelector('.stub-tear');
+      if(tear){
+        try { tear.style.background = blendHex(accent, PAPER_LIGHT, 0.08); }
+        catch(_) { tear.style.background = PAPER_LIGHT; }
+      }
+    });
+  }
+
   /* Render a pass frame to a canvas.
      The airline logo comes from a cross-origin host (images.kiwi.com). When that
      host doesn't return CORS headers, html2canvas re-loads and draws the logo
@@ -412,11 +444,7 @@
       scale: 2,
       useCORS: true,
       logging: false,
-      onclone: (doc) => {
-        if(dropLogos){
-          doc.querySelectorAll('img.logo').forEach(img => img.remove());
-        }
-      }
+      onclone: (doc) => sanitizeClone(doc, dropLogos)
     });
   }
 
