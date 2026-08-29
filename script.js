@@ -1,8 +1,9 @@
 (function(){
-  'use strict';
 
   /* ============================================================
-     Airline brand colors — curated. Tints each pass by airline.
+     Airline brand colors — curated fallback (used regardless of
+     whether the network lookups below succeed, since a live
+     brand-color API is not reliably queryable cross-origin).
      ============================================================ */
   const AIRLINE_COLORS = {
     AI:{primary:'#E0272A',secondary:'#F5A623'}, '6E':{primary:'#13294B',secondary:'#F58220'},
@@ -10,18 +11,18 @@
     EK:{primary:'#D71920',secondary:'#C09A5B'}, QR:{primary:'#5C0632',secondary:'#8A1538'},
     EY:{primary:'#5D3954',secondary:'#BD8B13'}, BA:{primary:'#075AAA',secondary:'#EB2226'},
     AF:{primary:'#002157',secondary:'#EF3340'}, LH:{primary:'#05164D',secondary:'#F9BA00'},
-    SQ:{primary:'#1A3668',secondary:'#F99F1C'}, CX:{primary:'#00543C',secondary:'#A79A78'},
+    SQ:{primary:'#F99F1C',secondary:'#003876'}, CX:{primary:'#00543C',secondary:'#A79A78'},
     TG:{primary:'#4B0082',secondary:'#8E1537'}, JL:{primary:'#C4122E',secondary:'#4C4C4C'},
     NH:{primary:'#00468C',secondary:'#1BA3DE'}, DL:{primary:'#A6192E',secondary:'#003366'},
     AA:{primary:'#0078D2',secondary:'#C8102E'}, UA:{primary:'#002244',secondary:'#0091D0'},
-    WN:{primary:'#304CB2',secondary:'#F9B612'}, AC:{primary:'#D22630',secondary:'#1B1B1B'},
-    QF:{primary:'#E40000',secondary:'#1B1B1B'}, NZ:{primary:'#00205B',secondary:'#1B1B1B'},
+    WN:{primary:'#304CB2',secondary:'#F9B612'}, AC:{primary:'#D22630',secondary:'#000000'},
+    QF:{primary:'#E40000',secondary:'#1B1B1B'}, NZ:{primary:'#00205B',secondary:'#000000'},
     TK:{primary:'#C50830',secondary:'#5D2E0C'}, LX:{primary:'#E30613',secondary:'#1D1D1B'},
     KL:{primary:'#00A1DE',secondary:'#003876'}, IB:{primary:'#D7192D',secondary:'#F8B02C'},
     AZ:{primary:'#008C45',secondary:'#CD212A'}, FR:{primary:'#073590',secondary:'#F4C300'},
     U2:{primary:'#FF6600',secondary:'#12295C'}, VS:{primary:'#E10A0A',secondary:'#2E1A47'},
     B6:{primary:'#0033A0',secondary:'#00A0DF'}, AS:{primary:'#00385E',secondary:'#7AC142'},
-    MH:{primary:'#1B1B1B',secondary:'#C8102E'}, GA:{primary:'#003876',secondary:'#00A651'},
+    MH:{primary:'#010101',secondary:'#C8102E'}, GA:{primary:'#003876',secondary:'#00A651'},
     PR:{primary:'#003DA5',secondary:'#EE2E24'}, VN:{primary:'#00369C',secondary:'#FFCC29'},
     KE:{primary:'#00256C',secondary:'#8B7355'}, OZ:{primary:'#00349B',secondary:'#B10041'},
     CA:{primary:'#B90E27',secondary:'#F4A11D'}, MU:{primary:'#B90E27',secondary:'#1D3E7C'},
@@ -31,11 +32,11 @@
     AR:{primary:'#74ACDF',secondary:'#1B1B1B'}, IX:{primary:'#C1272D',secondary:'#F7941E'},
     G8:{primary:'#8DC63F',secondary:'#1B1B1B'}, I5:{primary:'#E4032E',secondary:'#F4A11D'}
   };
-  // House green as the default accent, keeping the Voyage look for unknown airlines.
-  const DEFAULT_ACCENT = {primary:'#183c32', secondary:'#d77b45'};
+  const DEFAULT_ACCENT = {primary:'#1C2B39', secondary:'#DEC99C'};
 
   /* ============================================================
-     Fallback datasets (instant), enriched by live fetch below.
+     Fallback airport / airline datasets (used instantly, then
+     enriched by the live fetches below once/if they resolve).
      ============================================================ */
   const FALLBACK_AIRPORTS = [
     ['DEL','Indira Gandhi International','Delhi','India'],['BOM','Chhatrapati Shivaji Maharaj Intl','Mumbai','India'],
@@ -73,6 +74,7 @@
     ['MEX','Mexico City International','Mexico City','Mexico'],['YYC','Calgary International','Calgary','Canada']
   ].map(a => ({iata:a[0], name:a[1], city:a[2], country:a[3]}));
 
+  const FALLBACK_AIRLINES = Object.keys(AIRLINE_COLORS).reduce((arr, code) => arr, []).concat([]);
   const AIRLINE_NAMES = {
     AI:'Air India', '6E':'IndiGo', UK:'Vistara', SG:'SpiceJet', EK:'Emirates', QR:'Qatar Airways',
     EY:'Etihad Airways', BA:'British Airways', AF:'Air France', LH:'Lufthansa', SQ:'Singapore Airlines',
@@ -89,9 +91,7 @@
 
   let AIRPORTS = FALLBACK_AIRPORTS.slice();
   let AIRLINES = FALLBACK_AIRLINE_LIST.slice();
-
-  const $ = id => document.getElementById(id);
-  const dataStatus = $('dataStatus');
+  const dataStatus = document.getElementById('dataStatus');
 
   function mergeByIata(base, extra){
     const seen = new Set(base.map(x => x.iata));
@@ -99,16 +99,21 @@
     return base;
   }
 
-  /* Live enrichment: ~29k airports + airline name→code map. */
+  /* Live enrichment #1: OurAirports-style dataset (mwgg/Airports on GitHub)
+     — ~29,000 airports with IATA/ICAO codes, names and cities. */
   fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json')
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(json => {
       const extra = Object.values(json)
         .filter(a => a.iata && a.iata.length === 3)
         .map(a => ({ iata: a.iata, name: a.name, city: a.city || a.name, country: a.country }));
-      AIRPORTS = mergeByIata(AIRPORTS, extra); updateStatus();
-    }).catch(updateStatus);
+      AIRPORTS = mergeByIata(AIRPORTS, extra);
+      updateStatus();
+    })
+    .catch(() => { updateStatus(); });
 
+  /* Live enrichment #2: OpenFlights airline dataset — name/alias to
+     IATA code mapping, used for the airline autocomplete. */
   fetch('https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat')
     .then(r => r.ok ? r.text() : Promise.reject())
     .then(text => {
@@ -116,30 +121,32 @@
       const extra = rows
         .filter(r => r[3] && r[3] !== '\\N' && r[3].trim().length === 2 && r[7] === 'Y')
         .map(r => ({ iata: r[3].trim(), name: r[1].trim() }));
-      AIRLINES = mergeByIata(AIRLINES, extra); updateStatus();
-    }).catch(updateStatus);
+      AIRLINES = mergeByIata(AIRLINES, extra);
+      updateStatus();
+    })
+    .catch(() => { updateStatus(); });
 
   let loadTicks = 0;
   function updateStatus(){
     loadTicks++;
-    dataStatus.textContent = 'Live lookup ready — ' + AIRPORTS.length + ' airports, ' + AIRLINES.length + ' airlines.';
+    dataStatus.textContent = 'Live airport & airline lookup ready — ' + AIRPORTS.length + ' airports, ' + AIRLINES.length + ' airlines indexed.';
     if(loadTicks >= 2 || AIRPORTS.length > 100){
-      setTimeout(() => { dataStatus.textContent = ''; }, 2500);
+      setTimeout(() => { dataStatus.style.display = 'none'; }, 2500);
     }
   }
   setTimeout(() => {
-    if(dataStatus && !dataStatus.textContent.startsWith('Live')){
-      dataStatus.textContent = 'Using built-in list (' + AIRPORTS.length + ' airports). Live lookups may still arrive.';
-    }
+    if(dataStatus) dataStatus.textContent = 'Using built-in airport & airline list (' + AIRPORTS.length + ' airports). Live lookups may still arrive.';
   }, 2500);
 
   function parseCsv(text){
-    const rows = []; let row = [], field = '', inQuotes = false;
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
     for(let i=0;i<text.length;i++){
       const c = text[i];
       if(inQuotes){
-        if(c === '"'){ if(text[i+1] === '"'){ field += '"'; i++; } else inQuotes = false; }
-        else field += c;
+        if(c === '"'){
+          if(text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; }
+        } else field += c;
       } else {
         if(c === '"') inQuotes = true;
         else if(c === ','){ row.push(field); field=''; }
@@ -156,7 +163,8 @@
      Autocomplete
      ============================================================ */
   function searchAirports(q){
-    q = q.trim().toLowerCase(); if(!q) return [];
+    q = q.trim().toLowerCase();
+    if(!q) return [];
     const starts = [], includes = [];
     for(const a of AIRPORTS){
       const hay = (a.city + ' ' + a.name + ' ' + a.iata).toLowerCase();
@@ -166,7 +174,8 @@
     return starts.concat(includes).slice(0, 8);
   }
   function searchAirlines(q){
-    q = q.trim().toLowerCase(); if(!q) return [];
+    q = q.trim().toLowerCase();
+    if(!q) return [];
     const starts = [], includes = [];
     for(const a of AIRLINES){
       const hay = (a.name + ' ' + a.iata).toLowerCase();
@@ -175,12 +184,21 @@
     }
     return starts.concat(includes).slice(0, 8);
   }
-  const exactCity = q => AIRPORTS.filter(a => a.city.toLowerCase() === q.trim().toLowerCase());
-  const exactAirline = q => AIRLINES.filter(a => a.name.toLowerCase() === q.trim().toLowerCase());
+  function exactCityMatches(q){
+    q = q.trim().toLowerCase();
+    return AIRPORTS.filter(a => a.city.toLowerCase() === q);
+  }
+  function exactAirlineMatches(q){
+    q = q.trim().toLowerCase();
+    return AIRLINES.filter(a => a.name.toLowerCase() === q);
+  }
 
   function wireAutocomplete(inputId, listId, searchFn, renderItem, onSelect){
-    const input = $(inputId), list = $(listId);
-    let activeIndex = -1, currentResults = [];
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let activeIndex = -1;
+    let currentResults = [];
+
     function close(){ list.classList.remove('open'); list.innerHTML=''; activeIndex=-1; }
     function open(results){
       currentResults = results;
@@ -191,69 +209,77 @@
         btn.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
       });
     }
-    function pick(i){ const r = currentResults[i]; if(!r) return; onSelect(input, r); close(); refreshPreview(); }
+    function pick(i){
+      const r = currentResults[i];
+      if(!r) return;
+      onSelect(input, r);
+      close();
+    }
     input.addEventListener('input', () => {
-      delete input.dataset.code; delete input.dataset.name; delete input.dataset.city;
+      delete input.dataset.code; delete input.dataset.name; delete input.dataset.city; delete input.dataset.country;
       open(searchFn(input.value));
     });
     input.addEventListener('keydown', (e) => {
       const items = Array.from(list.children);
-      if(e.key === 'ArrowDown'){ e.preventDefault(); activeIndex = Math.min(activeIndex+1, items.length-1); hl(items); }
-      else if(e.key === 'ArrowUp'){ e.preventDefault(); activeIndex = Math.max(activeIndex-1, 0); hl(items); }
+      if(e.key === 'ArrowDown'){ e.preventDefault(); activeIndex = Math.min(activeIndex+1, items.length-1); highlight(items); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); activeIndex = Math.max(activeIndex-1, 0); highlight(items); }
       else if(e.key === 'Enter'){ if(activeIndex >= 0){ e.preventDefault(); pick(activeIndex); } }
       else if(e.key === 'Escape'){ close(); }
     });
-    function hl(items){ items.forEach((it,i)=>it.classList.toggle('active', i===activeIndex)); if(items[activeIndex]) items[activeIndex].scrollIntoView({block:'nearest'}); }
+    function highlight(items){
+      items.forEach((it,i) => it.classList.toggle('active', i===activeIndex));
+      if(items[activeIndex]) items[activeIndex].scrollIntoView({block:'nearest'});
+    }
     input.addEventListener('blur', () => setTimeout(close, 120));
+    return input;
   }
 
   wireAutocomplete('from', 'fromList', searchAirports,
-    (a) => `<button type="button"><span class="ac-main">${esc(a.iata)} — ${esc(a.city)}</span><span class="ac-sub">${esc(a.name)}, ${esc(a.country)}</span></button>`,
-    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; });
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.iata)} &mdash; ${escapeHtml(a.city)}</span><span class="ac-sub">${escapeHtml(a.name)}, ${escapeHtml(a.country)}</span></button>`,
+    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; }
+  );
   wireAutocomplete('to', 'toList', searchAirports,
-    (a) => `<button type="button"><span class="ac-main">${esc(a.iata)} — ${esc(a.city)}</span><span class="ac-sub">${esc(a.name)}, ${esc(a.country)}</span></button>`,
-    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; });
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.iata)} &mdash; ${escapeHtml(a.city)}</span><span class="ac-sub">${escapeHtml(a.name)}, ${escapeHtml(a.country)}</span></button>`,
+    (input, a) => { input.value = a.city; input.dataset.code = a.iata; input.dataset.name = a.name; input.dataset.city = a.city; }
+  );
   wireAutocomplete('airline', 'airlineList', searchAirlines,
-    (a) => `<button type="button"><span class="ac-main">${esc(a.name)}</span><span class="ac-sub">${esc(a.iata)}</span></button>`,
-    (input, a) => { input.value = a.name; input.dataset.code = a.iata; });
+    (a) => `<button type="button"><span class="ac-main">${escapeHtml(a.name)}</span><span class="ac-sub">${escapeHtml(a.iata)}</span></button>`,
+    (input, a) => { input.value = a.name; input.dataset.code = a.iata; }
+  );
 
   function resolveAirport(input){
-    if(input.dataset.code) return { iata: input.dataset.code, city: input.dataset.city, approx:false };
-    const m = exactCity(input.value);
-    if(m.length === 1) return { iata: m[0].iata, city: m[0].city, approx:false };
+    if(input.dataset.code) return { iata: input.dataset.code, name: input.dataset.name, city: input.dataset.city, approx:false };
+    const matches = exactCityMatches(input.value);
+    if(matches.length === 1) return { iata: matches[0].iata, name: matches[0].name, city: matches[0].city, approx:false };
     const clean = (input.value||'').trim().replace(/[^a-zA-Z]/g,'');
-    return { iata: (clean.slice(0,3)||'???').toUpperCase(), city: input.value.trim(), approx:true };
+    return { iata: (clean.slice(0,3)||'???').toUpperCase(), name:null, city: input.value.trim(), approx:true };
   }
   function resolveAirline(input){
-    if(input.dataset.code) return { iata: input.dataset.code, name: input.value.trim() };
-    const m = exactAirline(input.value);
-    if(m.length === 1) return { iata: m[0].iata, name: m[0].name };
-    // maybe they typed a 2-char code directly
-    const v = input.value.trim();
-    if(/^[A-Za-z0-9]{2}$/.test(v) && AIRLINE_NAMES[v.toUpperCase()]) return { iata:v.toUpperCase(), name:AIRLINE_NAMES[v.toUpperCase()] };
-    return { iata: null, name: v };
+    if(input.dataset.code) return { iata: input.dataset.code, name: input.value.trim(), approx:false };
+    const matches = exactAirlineMatches(input.value);
+    if(matches.length === 1) return { iata: matches[0].iata, name: matches[0].name, approx:false };
+    return { iata: null, name: input.value.trim(), approx:true };
   }
 
-  /* ============================================================
-     Helpers
-     ============================================================ */
-  function esc(str){
+  function escapeHtml(str){
     return (str||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function fmtDate(iso){
     if(!iso) return '—';
     const d = new Date(iso + 'T00:00:00');
     if(isNaN(d)) return iso;
-    return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }).toUpperCase();
+    return d.toLocaleDateString(undefined, { day:'2-digit', month:'short', year:'numeric' });
   }
   function fmtTime(t){
     if(!t) return '—';
-    const [h,m] = t.split(':'); const hour = parseInt(h,10);
-    const ampm = hour >= 12 ? 'PM' : 'AM'; const h12 = ((hour + 11) % 12) + 1;
+    const [h,m] = t.split(':');
+    const hour = parseInt(h,10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12 = ((hour + 11) % 12) + 1;
     return h12 + ':' + m + ' ' + ampm;
   }
-  // Real boarding-pass name format: LASTNAME/FIRSTNAME (falls back gracefully).
-  function paxName(last, first){
+  // Real boarding-pass style: LASTNAME, FIRSTNAME
+  function formatPaxName(last, first){
     last = (last||'').trim(); first = (first||'').trim();
     if(!last && !first) return 'PASSENGER NAME';
     if(!first) return last.toUpperCase();
@@ -265,164 +291,119 @@
     for(let i=0;i<6;i++) r += chars[Math.floor(Math.random()*chars.length)];
     return r;
   }
-  function logoUrl(iata){ return 'https://images.kiwi.com/airlines/64/' + encodeURIComponent(iata) + '.png'; }
-
-  // Deterministic barcode bars from a seed string.
-  function barcodeBars(seedStr){
-    const s = String(seedStr || 'VOYAGE'); let seed = 0;
-    for(let i=0;i<s.length;i++) seed += s.charCodeAt(i) * (i + 1);
-    let html = '';
-    for(let i=0;i<42;i++){
-      const n = Math.abs(Math.sin(seed + i * 17));
-      const w = Math.max(1, Math.floor(n * 5) + 1);
-      html += `<i style="width:${w}px"></i>`;
-    }
-    return html;
-  }
 
   /* ============================================================
-     Card rendering (Voyage boarding pass)
-     ============================================================ */
-  function buildCardHTML(d){
-    const accent = (d.airlineCode && AIRLINE_COLORS[d.airlineCode]) || DEFAULT_ACCENT;
-    const logoInner = d.airlineCode
-      ? `<img crossorigin="anonymous" src="${logoUrl(d.airlineCode)}" alt="" onerror="this.remove()">`
-      : (d.airlineCode || '✦');
-    const codeMark = d.airlineCode ? esc(d.airlineCode) : '✦';
-    const flightLabel = ((d.airlineCode||'') + ' ' + d.flightNo).trim();
-
-    return `
-    <div class="boarding-pass" style="--accent:${accent.primary}; --accent-2:${accent.secondary}">
-      <div class="boarding-main">
-        <div class="pass-top">
-          <div class="airline">
-            <div class="airline-logo">${logoInner || codeMark}</div>
-            <div class="airline-info">
-              <strong>${esc(d.airline) || 'Airline'}</strong>
-              <small>Flight ${esc(flightLabel) || '—'}</small>
-            </div>
-          </div>
-          <div class="pass-type"><b>VOYAGE</b>Boarding Pass</div>
-        </div>
-
-        <div class="passenger-line">
-          <span class="pl-label">Passenger</span>
-          <span class="pl-name">${esc(d.paxName)}</span>
-        </div>
-
-        <div class="route">
-          <div class="airport">
-            <div class="airport-code${d.fromApprox ? ' approx' : ''}">${esc(d.fromCode)}</div>
-            <div class="city-name">${esc(d.fromCity)}</div>
-          </div>
-          <div class="route-line"><div class="line"></div><div class="plane">✈</div><div class="line"></div></div>
-          <div class="airport">
-            <div class="airport-code${d.toApprox ? ' approx' : ''}">${esc(d.toCode)}</div>
-            <div class="city-name">${esc(d.toCity)}</div>
-          </div>
-        </div>
-
-        <div class="pass-details">
-          <div><span class="detail-label">Date</span><strong class="detail-value">${fmtDate(d.date)}</strong></div>
-          <div><span class="detail-label">Boarding</span><strong class="detail-value">${fmtTime(d.boarding)}</strong></div>
-          <div><span class="detail-label">Gate</span><strong class="detail-value">${esc(d.gate) || '—'}</strong></div>
-          <div><span class="detail-label">Term.</span><strong class="detail-value">${esc(d.terminal) || '—'}</strong></div>
-          <div><span class="detail-label">Class</span><strong class="detail-value">${esc(d.cls)}</strong></div>
-        </div>
-
-        ${d.note ? `<div class="memory-note">“${esc(d.note)}”</div>` : ''}
-      </div>
-
-      <div class="perf"></div>
-
-      <div class="boarding-side">
-        <div class="side-top"><span>BOARDING PASS</span><span>${esc(d.terminal) || 'T—'}</span></div>
-        <div class="side-route">
-          <div class="codes"><strong>${esc(d.fromCode)}</strong><span class="side-plane">✈</span><strong>${esc(d.toCode)}</strong></div>
-        </div>
-        <div class="side-pnr"><span>Booking ref · PNR</span><strong>${esc(d.pnr)}</strong></div>
-        <div class="side-seat">
-          <div><span>Seat</span><strong>${esc(d.seat) || '—'}</strong></div>
-          <div><span>Gate</span><strong>${esc(d.gate) || '—'}</strong></div>
-        </div>
-        <div class="barcode">${barcodeBars(d.pnr + d.flightNo)}</div>
-        <div class="barcode-number">${esc((d.pnr||'') + ' ' + (d.airlineCode||'') + d.flightNo)}</div>
-      </div>
-    </div>`;
-  }
-
-  /* ============================================================
-     Live preview
-     ============================================================ */
-  function readForm(){
-    const fromR = resolveAirport($('from'));
-    const toR = resolveAirport($('to'));
-    const airlineR = resolveAirline($('airline'));
-    return {
-      paxName: paxName($('lastName').value, $('firstName').value),
-      airline: airlineR.name || 'Your Airline',
-      airlineCode: airlineR.iata,
-      flightNo: $('flightNo').value.trim(),
-      fromCode: fromR.iata, fromCity: fromR.city || 'Departure', fromApprox: fromR.approx,
-      toCode: toR.iata, toCity: toR.city || 'Arrival', toApprox: toR.approx,
-      date: $('date').value,
-      cls: ($('cls').value || 'ECONOMY').toUpperCase(),
-      gate: $('gate').value.trim().toUpperCase(),
-      seat: $('seat').value.trim().toUpperCase(),
-      terminal: $('terminal').value.trim().toUpperCase(),
-      boarding: $('boarding').value,
-      pnr: ($('pnr').value.trim().toUpperCase()) || previewPNR,
-      note: $('note').value.trim()
-    };
-  }
-
-  let previewPNR = randomPNR();
-  const livePass = $('livePass');
-  function refreshPreview(){ livePass.innerHTML = buildCardHTML(readForm()); }
-
-  // wire every field to live-update the preview
-  ['lastName','firstName','airline','flightNo','cls','from','to','date','boarding','gate','seat','terminal','pnr','note']
-    .forEach(id => { const el = $(id); if(el){ el.addEventListener('input', refreshPreview); el.addEventListener('change', refreshPreview); } });
-
-  /* ============================================================
-     Diary collection
+     Card rendering
      ============================================================ */
   const entries = [];
-  const collectionEl = $('collection');
-  const emptyState = $('emptyState');
-  const tripCount = $('tripCount');
-  const exportAllBtn = $('exportAll');
-  const form = $('passForm');
+  const collectionEl = document.getElementById('collection');
+  const emptyState = document.getElementById('emptyState');
+  const countEl = document.getElementById('count');
+  const exportAllBtn = document.getElementById('exportAll');
+  const form = document.getElementById('passForm');
+
+  function updateMeta(){
+    countEl.textContent = entries.length + (entries.length === 1 ? ' pass' : ' passes');
+    emptyState.style.display = entries.length ? 'none' : 'block';
+    exportAllBtn.hidden = entries.length === 0;
+  }
+
+  function logoUrl(iata){
+    return 'https://images.kiwi.com/airlines/64/' + encodeURIComponent(iata) + '.png';
+  }
+
+  function buildCardHTML(data){
+    const tilt = (Math.random() * 1.6 - 0.8).toFixed(2) + 'deg';
+    const accent = (data.airlineCode && AIRLINE_COLORS[data.airlineCode]) || DEFAULT_ACCENT;
+    const codeFromClass = data.fromApprox ? 'code approx' : 'code';
+    const codeToClass = data.toApprox ? 'code approx' : 'code';
+    const logo = data.airlineCode ? `<img class="logo" crossorigin="anonymous" src="${logoUrl(data.airlineCode)}" alt="" onerror="this.remove()">` : '';
+
+    return `
+      <div class="boarding-pass" style="--tilt:${tilt}; --accent:${accent.primary}; --accent-soft:${accent.secondary}">
+        <div class="accent-stripe"></div>
+        <div class="tape"></div>
+        <div class="stamp-badge">BOARDED<br>${fmtDate(data.date)}</div>
+        <div class="stub-main">
+          <div class="bp-top">
+            <div class="airline">
+              ${logo}
+              <span class="plane-icon">&#9992;</span>
+              <span class="airline-name">${escapeHtml(data.airline)}${data.airlineCode ? ' &middot; ' + escapeHtml(data.airlineCode) : ''}</span>
+            </div>
+            <div class="class-tag">${escapeHtml(data.cls)}</div>
+          </div>
+          <div class="route">
+            <div class="airport from">
+              <span class="${codeFromClass}">${escapeHtml(data.fromCode)}</span>
+              <span class="aname">${escapeHtml(data.fromCity)}</span>
+            </div>
+            <div class="path">
+              <div class="dashed-line"></div>
+              <span class="plane-mid">&#9992;</span>
+            </div>
+            <div class="airport to">
+              <span class="${codeToClass}">${escapeHtml(data.toCode)}</span>
+              <span class="aname">${escapeHtml(data.toCity)}</span>
+            </div>
+          </div>
+          <div class="details-grid">
+            <div><label>Passenger</label><span>${escapeHtml(data.paxName)}</span></div>
+            <div><label>Flight</label><span>${escapeHtml((data.airlineCode||'')+' '+data.flightNo)}</span></div>
+            <div><label>Date</label><span>${fmtDate(data.date)}</span></div>
+            <div><label>Gate</label><span>${escapeHtml(data.gate) || '—'}</span></div>
+            <div><label>Seat</label><span>${escapeHtml(data.seat) || '—'}</span></div>
+            <div><label>Boarding</label><span>${fmtTime(data.boarding)}</span></div>
+          </div>
+          ${data.note ? `<div class="memory-note">&ldquo;${escapeHtml(data.note)}&rdquo;</div>` : ''}
+        </div>
+        <div class="perforation"></div>
+        <div class="stub-tear">
+          <div class="stub-row">
+            <span class="stub-code">${escapeHtml(data.fromCode)}&rarr;${escapeHtml(data.toCode)}</span>
+          </div>
+          <div class="stub-pnr">
+            <label>Booking Ref &middot; PNR</label>
+            <span>${escapeHtml(data.pnr)}</span>
+          </div>
+          <div class="stub-mini">
+            <div><label>Flight</label><span>${escapeHtml((data.airlineCode||'')+data.flightNo)}</span></div>
+            <div><label>Seat</label><span>${escapeHtml(data.seat)||'—'}</span></div>
+            <div><label>Gate</label><span>${escapeHtml(data.gate)||'—'}</span></div>
+            <div><label>Class</label><span>${escapeHtml(data.cls.slice(0,4))}</span></div>
+          </div>
+          <div class="barcode"></div>
+        </div>
+      </div>
+    `;
+  }
 
   const ACTIONS_HTML = `
     <div class="card-actions">
       <button type="button" data-action="png">Save PNG</button>
       <button type="button" data-action="pdf">Save PDF</button>
       <button type="button" data-action="delete" class="danger">Remove</button>
-    </div>`;
-
-  function updateMeta(){
-    tripCount.textContent = entries.length;
-    emptyState.style.display = entries.length ? 'none' : 'block';
-    exportAllBtn.hidden = entries.length === 0;
-  }
+    </div>
+  `;
 
   function addEntry(data){
-    const id = 'p' + Date.now() + Math.random().toString(36).slice(2,6);
+    const id = 'p' + Date.now() + Math.random().toString(36).slice(2,7);
     entries.unshift({ id, ...data });
 
     const wrapper = document.createElement('div');
     wrapper.className = 'pass-card pass-enter';
     wrapper.dataset.id = id;
-    wrapper.innerHTML = `<div class="pass-wrap"><div class="capture-frame">${buildCardHTML(data)}</div></div>${ACTIONS_HTML}`;
+    wrapper.innerHTML = `<div class="pass-scroll"><div class="capture-frame">${buildCardHTML(data)}</div></div>${ACTIONS_HTML}`;
     collectionEl.prepend(wrapper);
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      wrapper.classList.add('pass-enter-active'); wrapper.classList.remove('pass-enter');
+      wrapper.classList.add('pass-enter-active');
+      wrapper.classList.remove('pass-enter');
     }));
 
     wrapper.addEventListener('click', onCardAction);
     updateMeta();
+    wrapper.scrollIntoView({ behavior:'smooth', block:'nearest' });
   }
 
   function removeEntry(wrapper){
@@ -434,50 +415,51 @@
       if(idx > -1) entries.splice(idx, 1);
       updateMeta();
     }, { once:true });
-    showToast('Journey removed');
   }
 
   /* ============================================================
      Capture + download (hardened)
      ============================================================ */
   // html2canvas 1.4.1 can't parse color-mix(); pre-compute an rgb() equivalent
-  // for the green stub so capture never throws "unsupported color function".
+  // for the .stub-tear background so capture never throws.
   function hexToRgb(hex){
     hex = (hex||'').trim().replace('#',''); if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
     const n = parseInt(hex,16); return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
   }
-  function darken(hex, keep){ // keep = fraction of original toward black
-    const c = hexToRgb(hex);
-    const f = x => Math.round(x * keep);
-    return `rgb(${f(c.r)}, ${f(c.g)}, ${f(c.b)})`;
+  function blendHex(hexA, hexB, weightA){
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    const mix = (x,y) => Math.round(x*weightA + y*(1-weightA));
+    return `rgb(${mix(a.r,b.r)}, ${mix(a.g,b.g)}, ${mix(a.b,b.b)})`;
   }
+  const PAPER_LIGHT = '#F8F1DD';
 
   function sanitizeClone(doc, dropLogos){
-    if(dropLogos) doc.querySelectorAll('.airline-logo img').forEach(img => img.remove());
-    // Replace the color-mix() gradient on .boarding-side with plain rgb() stops.
+    if(dropLogos) doc.querySelectorAll('img.logo').forEach(img => img.remove());
+    // Replace color-mix() stub background with a pre-computed rgb() equivalent.
     doc.querySelectorAll('.boarding-pass').forEach(bp => {
-      const accent = (bp.style.getPropertyValue('--accent') || '#183c32').trim();
-      const side = bp.querySelector('.boarding-side');
-      if(side){
-        try { side.style.background = `linear-gradient(158deg, ${accent}, ${darken(accent, 0.78)})`; }
-        catch(_){ side.style.background = accent; }
+      const accent = (bp.style.getPropertyValue('--accent') || '#1C2B39').trim();
+      const tear = bp.querySelector('.stub-tear');
+      if(tear){
+        try { tear.style.background = blendHex(accent, PAPER_LIGHT, 0.08); }
+        catch(_){ tear.style.background = PAPER_LIGHT; }
       }
     });
   }
 
   function renderFrame(frameEl, dropLogos){
     return html2canvas(frameEl, {
-      backgroundColor: '#fffdf8',
-      scale: 2,
+      backgroundColor: '#F8F1DD',
+      scale: 2,               // safe for mobile Safari canvas limits
       useCORS: true,
       logging: false,
       onclone: (doc) => sanitizeClone(doc, dropLogos)
     });
   }
 
+  // Guarantee a clean (untainted) canvas: try with logo, retry without if tainted.
   async function captureCanvas(frameEl){
     const canvas = await renderFrame(frameEl, false);
-    try { canvas.toDataURL('image/png'); return canvas; }   // throws if tainted
+    try { canvas.toDataURL('image/png'); return canvas; }
     catch(_){ return renderFrame(frameEl, true); }
   }
 
@@ -487,23 +469,24 @@
     });
   }
 
-  async function downloadPNG(frameEl, base){
+  async function downloadPNG(frameEl, filenameBase){
     const canvas = await captureCanvas(frameEl);
     const blob = await canvasToBlob(canvas, 'image/png');
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url; link.download = base + '.png';
+    link.href = url; link.download = filenameBase + '.png';
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
-  async function downloadPDF(frameEl, base){
+  async function downloadPDF(frameEl, filenameBase){
     const canvas = await captureCanvas(frameEl);
     const { jsPDF } = window.jspdf;
-    const wMM = 210, hMM = (canvas.height / canvas.width) * wMM;
+    const wMM = 200, hMM = (canvas.height / canvas.width) * wMM;
     const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
+    // jsPDF.addImage needs a data URL / base64 — NOT a blob object URL.
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
-    pdf.save(base + '.pdf');
+    pdf.save(filenameBase + '.pdf');
   }
 
   function onCardAction(e){
@@ -517,96 +500,83 @@
 
     if(btn.dataset.action === 'delete'){ removeEntry(wrapper); return; }
 
-    const label = btn.textContent;
-    btn.disabled = true; btn.textContent = '…';
-    const run = btn.dataset.action === 'png' ? downloadPNG(frame, base) : downloadPDF(frame, base);
-    run
-      .then(() => showToast((btn.dataset.action === 'png' ? 'PNG' : 'PDF') + ' downloaded ✓'))
+    const originalLabel = btn.textContent;
+    btn.disabled = true; btn.textContent = '...';
+    const action = btn.dataset.action === 'png' ? downloadPNG(frame, base) : downloadPDF(frame, base);
+    action
       .catch(err => {
         console.error('Download failed:', err);
         alert('Download failed: ' + (err && err.message ? err.message : 'unknown error') +
               '\n\nOn some phones the file opens in a new tab instead — long-press it to save.');
       })
-      .finally(() => { btn.disabled = false; btn.textContent = label; });
+      .finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
   }
 
-  /* ============================================================
-     Submit + export-all + demo
-     ============================================================ */
   form.addEventListener('submit', function(e){
     e.preventDefault();
-    const data = readForm();
-    if($('lastName').value.trim() === '' && $('firstName').value.trim() === ''){ alert('Please enter the passenger name.'); return; }
-    if(!$('from').value.trim() || !$('to').value.trim() || !$('airline').value.trim() || !data.flightNo || !data.date){
-      alert('Please fill airline, flight number, both cities, and the date.'); return;
+    const fd = new FormData(form);
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const airlineInput = document.getElementById('airline');
+
+    const fromR = resolveAirport(fromInput);
+    const toR = resolveAirport(toInput);
+    const airlineR = resolveAirline(airlineInput);
+
+    const lastName = fd.get('lastName').trim();
+    const firstName = fd.get('firstName').trim();
+    const pnrRaw = (fd.get('pnr') || '').trim().toUpperCase();
+
+    const data = {
+      lastName, firstName,
+      paxName: formatPaxName(lastName, firstName),
+      airline: airlineR.name,
+      airlineCode: airlineR.iata,
+      flightNo: fd.get('flightNo').trim(),
+      fromCode: fromR.iata, fromCity: fromR.city, fromApprox: fromR.approx,
+      toCode: toR.iata, toCity: toR.city, toApprox: toR.approx,
+      date: fd.get('date'),
+      cls: fd.get('cls'),
+      gate: fd.get('gate').trim(),
+      seat: fd.get('seat').trim(),
+      boarding: fd.get('boarding'),
+      pnr: pnrRaw || randomPNR(),
+      note: fd.get('note').trim()
+    };
+    if((!lastName && !firstName) || !data.fromCity || !data.toCity || !data.airline || !data.flightNo || !data.date){
+      form.reportValidity();
+      return;
     }
     addEntry(data);
-    showToast('Journey added to your diary ✈');
-
     form.reset();
-    $('cls').value = 'ECONOMY';
-    $('boarding').value = '08:30';
-    previewPNR = randomPNR();
-    refreshPreview();
-    $('lastName').focus();
+    document.getElementById('lastName').focus();
   });
 
   exportAllBtn.addEventListener('click', async function(){
-    const frames = Array.from(document.querySelectorAll('.collection .capture-frame'));
+    const frames = Array.from(document.querySelectorAll('.capture-frame'));
     if(!frames.length) return;
-    exportAllBtn.disabled = true; const label = exportAllBtn.textContent; exportAllBtn.textContent = 'Preparing PDF…';
+    exportAllBtn.disabled = true;
+    exportAllBtn.textContent = 'Preparing PDF…';
     try{
-      const { jsPDF } = window.jspdf; let pdf = null;
+      const { jsPDF } = window.jspdf;
+      let pdf = null;
       for(let i=0;i<frames.length;i++){
         const canvas = await captureCanvas(frames[i]);
-        const wMM = 210, hMM = (canvas.height / canvas.width) * wMM;
+        const wMM = 200;
+        const hMM = (canvas.height / canvas.width) * wMM;
         if(!pdf) pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM,hMM] });
         else pdf.addPage([wMM,hMM], 'landscape');
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
       }
-      pdf.save('voyage-travel-diary.pdf');
-      showToast('Diary exported ✓');
+      pdf.save('the-boarding-pass-diary.pdf');
     } catch(err){
       console.error('Export failed:', err);
       alert('Diary export failed: ' + (err && err.message ? err.message : 'unknown error'));
     } finally {
-      exportAllBtn.disabled = false; exportAllBtn.textContent = label;
+      exportAllBtn.disabled = false;
+      exportAllBtn.textContent = 'Export whole diary as PDF';
     }
   });
 
-  $('demoBtn').addEventListener('click', function(){
-    $('lastName').value = 'Sharma';
-    $('firstName').value = 'Aarav';
-    const air = $('airline'); air.value = 'Air India'; air.dataset.code = 'AI';
-    $('flightNo').value = '204';
-    $('cls').value = 'BUSINESS';
-    const f = $('from'); f.value = 'Delhi'; f.dataset.code = 'DEL'; f.dataset.city = 'Delhi';
-    const t = $('to'); t.value = 'Reykjavik'; t.dataset.code = 'KEF'; t.dataset.city = 'Reykjavik';
-    $('date').value = new Date().toISOString().split('T')[0];
-    $('boarding').value = '21:40';
-    $('gate').value = 'B12';
-    $('seat').value = '2A';
-    $('terminal').value = 'T3';
-    $('pnr').value = 'VY6K2P';
-    $('note').value = 'Window seat, first snow from above.';
-    refreshPreview();
-    showToast('Demo flight loaded');
-  });
-
-  /* ============================================================
-     Toast
-     ============================================================ */
-  let toastTimer;
-  function showToast(msg){
-    const toast = $('toast');
-    toast.textContent = msg; toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-  }
-
-  /* ============================================================
-     Init
-     ============================================================ */
-  refreshPreview();
   updateMeta();
 })();
