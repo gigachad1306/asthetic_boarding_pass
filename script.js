@@ -400,17 +400,37 @@
     }, { once:true });
   }
 
-  /* Render a pass frame to a canvas. Cross-origin airline logos can taint the
-     canvas and make toBlob()/toDataURL() throw, which silently kills the whole
-     download — so we skip any element that fails to load with CORS. */
-  async function renderFrame(frameEl){
+  /* Render a pass frame to a canvas.
+     The airline logo comes from a cross-origin host (images.kiwi.com). When that
+     host doesn't return CORS headers, html2canvas re-loads and draws the logo
+     while cloning the pass, which TAINTS the canvas — and a tainted canvas makes
+     toBlob()/toDataURL() throw, breaking every download. scale:2 also keeps the
+     canvas small enough for mobile Safari's canvas-size limits. */
+  function renderFrame(frameEl, dropLogos){
     return html2canvas(frameEl, {
       backgroundColor: '#F8F1DD',
-      scale: 3,
+      scale: 2,
       useCORS: true,
-      ignoreElements: (el) =>
-        el.tagName === 'IMG' && (!el.complete || el.naturalWidth === 0)
+      logging: false,
+      onclone: (doc) => {
+        if(dropLogos){
+          doc.querySelectorAll('img.logo').forEach(img => img.remove());
+        }
+      }
     });
+  }
+
+  /* Capture the pass, guaranteeing a clean (untainted) canvas.
+     First attempt keeps the logo; if that canvas turns out tainted we detect it
+     via a toDataURL probe and re-render with the logo stripped. */
+  async function captureCanvas(frameEl){
+    const canvas = await renderFrame(frameEl, false);
+    try {
+      canvas.toDataURL('image/png');   // throws if tainted
+      return canvas;
+    } catch (_) {
+      return renderFrame(frameEl, true);
+    }
   }
 
   // Wrap canvas.toBlob in a promise so callers can await the actual file.
@@ -423,7 +443,7 @@
   }
 
   async function downloadPNG(frameEl, filenameBase){
-    const canvas = await renderFrame(frameEl);
+    const canvas = await captureCanvas(frameEl);
     const blob = await canvasToBlob(canvas, 'image/png');
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -432,11 +452,11 @@
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   async function downloadPDF(frameEl, filenameBase){
-    const canvas = await renderFrame(frameEl);
+    const canvas = await captureCanvas(frameEl);
     const { jsPDF } = window.jspdf;
     const wMM = 200;
     const hMM = (canvas.height / canvas.width) * wMM;
@@ -464,7 +484,7 @@
     action
       .catch(err => {
         console.error('Download failed:', err);
-        alert('Sorry, that download failed. Please try again.');
+        alert('Download failed: ' + (err && err.message ? err.message : 'unknown error') + '\n\nOn some phones the file may open in a new tab instead — long-press it to save.');
       })
       .finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
   }
@@ -512,7 +532,7 @@
       const { jsPDF } = window.jspdf;
       let pdf = null;
       for(let i=0;i<frames.length;i++){
-        const canvas = await renderFrame(frames[i]);
+        const canvas = await captureCanvas(frames[i]);
         const wMM = 200;
         const hMM = (canvas.height / canvas.width) * wMM;
         if(!pdf) pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM,hMM] });
