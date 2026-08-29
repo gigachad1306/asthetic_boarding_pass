@@ -298,6 +298,7 @@
   .stub-tear{
     flex: 0 0 clamp(112px, 16vw, 148px); padding: 1.5rem 0.85rem 1.2rem; display:flex; flex-direction:column; justify-content:space-between; gap:0.7rem;
     border-radius: 0 10px 10px 0;
+    background: var(--paper-light); /* fallback for renderers without color-mix */
     background: color-mix(in srgb, var(--accent) 8%, var(--paper-light));
   }
   .stub-row{ display:flex; align-items:baseline; justify-content:space-between; gap:0.4rem; }
