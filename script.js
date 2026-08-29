@@ -320,7 +320,7 @@
     const logo = data.airlineCode ? `<img class="logo" crossorigin="anonymous" src="${logoUrl(data.airlineCode)}" alt="" onerror="this.remove()">` : '';
 
     return `
-      <div class="boarding-pass" style="--tilt:${tilt}; --accent:${accent.primary}; --accent-soft:${accent.secondary}">
+      <div class="boarding-pass" style="--tilt:${tilt}; --accent:${accent.primary}; --accent-soft:${accent.secondary}; --accent-ink:${readableAccent(accent.primary)}">
         <div class="accent-stripe"></div>
         <div class="tape"></div>
         <div class="stamp-badge">BOARDED<br>${fmtDate(data.date)}</div>
@@ -420,31 +420,27 @@
   /* ============================================================
      Capture + download (hardened)
      ============================================================ */
-  // html2canvas 1.4.1 can't parse color-mix(); pre-compute an rgb() equivalent
-  // for the .stub-tear background so capture never throws.
+  // Parse hex → {r,g,b}
   function hexToRgb(hex){
     hex = (hex||'').trim().replace('#',''); if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
     const n = parseInt(hex,16); return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
   }
-  function blendHex(hexA, hexB, weightA){
-    const a = hexToRgb(hexA), b = hexToRgb(hexB);
-    const mix = (x,y) => Math.round(x*weightA + y*(1-weightA));
-    return `rgb(${mix(a.r,b.r)}, ${mix(a.g,b.g)}, ${mix(a.b,b.b)})`;
+  // A dark-enough version of an airline colour so white text on it (the stub)
+  // and the colour on ivory (name, stamp, PNR) always keep good contrast.
+  // Dark brand colours pass through unchanged; light ones are darkened.
+  function readableAccent(hex){
+    try{
+      const {r,g,b} = hexToRgb(hex);
+      const lum = (0.299*r + 0.587*g + 0.114*b) / 255;      // perceived brightness
+      if(lum <= 0.45) return hex;                            // already dark enough
+      const f = lum > 0.7 ? 0.42 : 0.55;                     // darken lighter colours more
+      return `rgb(${Math.round(r*f)}, ${Math.round(g*f)}, ${Math.round(b*f)})`;
+    } catch(_){ return hex; }
   }
-  const PAPER_LIGHT = '#F8F1DD';
-  const STUB_BASE = '#EEDFBE';   // matches .stub-tear base in styles.css
 
   function sanitizeClone(doc, dropLogos){
+    // Cross-origin airline logos can taint the canvas; on the retry pass we drop them.
     if(dropLogos) doc.querySelectorAll('img.logo').forEach(img => img.remove());
-    // Replace color-mix() stub background with a pre-computed rgb() equivalent.
-    doc.querySelectorAll('.boarding-pass').forEach(bp => {
-      const accent = (bp.style.getPropertyValue('--accent') || '#1C2B39').trim();
-      const tear = bp.querySelector('.stub-tear');
-      if(tear){
-        try { tear.style.background = blendHex(accent, STUB_BASE, 0.07); }
-        catch(_){ tear.style.background = STUB_BASE; }
-      }
-    });
   }
 
   function renderFrame(frameEl, dropLogos){
@@ -483,7 +479,7 @@
   async function downloadPDF(frameEl, filenameBase){
     const canvas = await captureCanvas(frameEl);
     const { jsPDF } = window.jspdf;
-    const wMM = 200, hMM = (canvas.height / canvas.width) * wMM;
+    const wMM = 203.2, hMM = (canvas.height / canvas.width) * wMM;  // 8in wide → 3.25in tall at 8:3.25
     const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM, hMM] });
     // jsPDF.addImage needs a data URL / base64 — NOT a blob object URL.
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMM, hMM);
@@ -563,7 +559,7 @@
       let pdf = null;
       for(let i=0;i<frames.length;i++){
         const canvas = await captureCanvas(frames[i]);
-        const wMM = 200;
+        const wMM = 203.2;   // 8 inches
         const hMM = (canvas.height / canvas.width) * wMM;
         if(!pdf) pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[wMM,hMM] });
         else pdf.addPage([wMM,hMM], 'landscape');
